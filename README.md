@@ -1,4 +1,6 @@
-# dungeness-OA-omics
+# DuMOAR
+
+The **Du**ngeness **M**ulti-**O**mics **A**cidification **R**esearch project 
 
 Running high-level notes on project: [Dungeness OA crab epigenetics & RNAseq](https://docs.google.com/document/d/1WfI6zgdPGk7pudWYOn_G4H8sQ4uaryZ5EAKAUaN7Idk/edit?usp=sharing)
 
