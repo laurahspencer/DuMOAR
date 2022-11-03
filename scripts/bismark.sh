@@ -14,6 +14,7 @@
 
 #source /home/lspencer/venv/bin/activate
 module load bio/bismark/0.24.0
+source /home/lspencer/venv/bin/activate
 
 # path variables not working, trying to just provide hard paths
 IN="/scratch/lspencer/DuMOAR/trimmed/"
@@ -22,11 +23,11 @@ OUT="/scratch/lspencer/DuMOAR/aligned/"
 # Prepare genome for Bismark
 # NOTE: for some reason using a path variable to specify genome folder didn't work
 # Also- this only needs to be run once
-# bismark_genome_preparation \
-# --verbose \
-# --parallel 20 \
-# --bowtie2 \
-# /home/lspencer/references/gadMor3.0/bismark/
+bismark_genome_preparation \
+--verbose \
+--parallel 20 \
+--bowtie2 \
+/home/lspencer/references/dungeness/
 
 # Run Bismark to align trimmed reads
 
@@ -38,7 +39,7 @@ cd ${OUT}
 find ${IN}*_R1_val_1.fq \
 | xargs basename -s _R1_val_1.fq | xargs -I{} bismark \
 --bowtie2 \
--genome /home/lspencer/references/gadMor3.0/bismark/ \
+-genome /home/lspencer/references/dungeness/ \
 -p 4 \
 -score_min L,0,-0.6 \
 --non_directional \
@@ -66,3 +67,6 @@ bismark2report
 
 #Bismark summary report
 bismark2summary
+
+# Run multiqc to summarize fastqc reports
+multiqc . .
