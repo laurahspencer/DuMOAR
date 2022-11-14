@@ -21,9 +21,9 @@ do
     for sample in ${SAMPLES}
     do
         echo ${sample}
-        cat ${SUB_FOLDER}/${sample}_*_R1_*.fq.gz \
+        zcat ${SUB_FOLDER}/${sample}_*_R1_*.fq.gz \
             >> ${OUT}/${sample}_R1.fastq
-        cat ${SUB_FOLDER}/${sample}_*_R2_*.fq.gz \
+        zcat ${SUB_FOLDER}/${sample}_*_R2_*.fq.gz \
             >> ${OUT}/${sample}_R2.fastq
     done
 done
