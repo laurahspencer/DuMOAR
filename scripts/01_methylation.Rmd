@@ -1,0 +1,494 @@
+---
+title: "MethylKit"
+author: "Laura H Spencer"
+date: "11/17/2022"
+output: html_document
+knit: (function(input, ...) {
+    rmarkdown::render(
+      input,
+      output_file = paste0(
+        xfun::sans_ext(input), '-', Sys.Date(), '.html'
+      ),
+      envir = globalenv()
+    )
+  })
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Load libraries
+
+```{r message=FALSE, warning=FALSE, results=FALSE}
+list.of.packages <- c("tidyverse", "reshape2", "here", "methylKit", "ggforce", "matrixStats", "Pstat", "viridis", "plotly", "readr", "GenomicRanges", "vegan", "factoextra", "PerformanceAnalytics", "corrplot", "janitor", "googlesheets4", "ggrepel") #add new libraries here 
+
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+
+# Load all libraries 
+lapply(list.of.packages, FUN = function(X) {
+  do.call("require", list(X)) 
+})
+
+# Load MethylKit
+if (!require("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install("methylKit")
+require(methylKit)
+```
+
+### Obtain session information
+
+```{r}
+sessionInfo()
+```
+
+### Import bismark alignment .bams into MethylKit. NOTE: This was done on Sedna! 
+
+I ran this code interactively on Sedna 
+`srun --pty /bin/bash` # First, I entered an interactive Sedna node
+`module load R` # Then, load R
+`R` #start R interactively 
+Now proceed with the following code 
+
+```{r}
+# ## AGAIN- this code was run interactively on Sedna! 
+# # Install and load programs
+# 
+# # Load MethylKit
+# if (!require("BiocManager", quietly = TRUE))
+#   install.packages("BiocManager")
+# 
+# BiocManager::install("methylKit")
+# 
+# require(methylKit)
+# require(tidyverse)
+# 
+# # Load sample info dataframe 
+# load(file="/home/lspencer/DuMOAR/R/sample.info")
+# 
+# # Triple check that treatments are in the order of sequence sample number (1-20)
+# (sample.info %>% arrange(sample_seq))$sample # List out library prep sample number 
+# (sample.info %>% arrange(sample_seq))$sample_seq # List out sequence sample 
+# (sample.info %>% arrange(sample_seq))$high_or_low_co2 # List out treatment
+# 
+# # Read .bam files into Methylkit on Sedna 
+# (file.list=list("/scratch/lspencer/DuMOAR/aligned/trim-before-concat/CH01_06_S1_R1_bismark_bt2_pe.deduplicated.sorted.bam",
+#                "/scratch/lspencer/DuMOAR/aligned/trim-before-concat/CH01_14_S2_R1_bismark_bt2_pe.deduplicated.sorted.bam",
+#                "/scratch/lspencer/DuMOAR/aligned/trim-before-concat/CH01_22_S3_R1_bismark_bt2_pe.deduplicated.sorted.bam",
+#                "/scratch/lspencer/DuMOAR/aligned/trim-before-concat/CH01_38_S4_R1_bismark_bt2_pe.deduplicated.sorted.bam",
+#                "/scratch/lspencer/DuMOAR/aligned/trim-before-concat/CH03_04_S5_R1_bismark_bt2_pe.deduplicated.sorted.bam",
+#                "/scratch/lspencer/DuMOAR/aligned/trim-before-concat/CH03_15_S6_R1_bismark_bt2_pe.deduplicated.sorted.bam",
+#                "/scratch/lspencer/DuMOAR/aligned/trim-before-concat/CH03_33_S7_R1_bismark_bt2_pe.deduplicated.sorted.bam",
+#                "/scratch/lspencer/DuMOAR/aligned/trim-before-concat/CH05_01_S8_R1_bismark_bt2_pe.deduplicated.sorted.bam",
+#                "/scratch/lspencer/DuMOAR/aligned/trim-before-concat/CH05_06_S9_R1_bismark_bt2_pe.deduplicated.sorted.bam",
+#                "/scratch/lspencer/DuMOAR/aligned/trim-before-concat/CH05_21_S10_R1_bismark_bt2_pe.deduplicated.sorted.bam",
+#                "/scratch/lspencer/DuMOAR/aligned/trim-before-concat/CH05_24_S11_R1_bismark_bt2_pe.deduplicated.sorted.bam",
+#                "/scratch/lspencer/DuMOAR/aligned/trim-before-concat/CH07_06_S12_R1_bismark_bt2_pe.deduplicated.sorted.bam",
+#                "/scratch/lspencer/DuMOAR/aligned/trim-before-concat/CH07_11_S13_R1_bismark_bt2_pe.deduplicated.sorted.bam",
+#                "/scratch/lspencer/DuMOAR/aligned/trim-before-concat/CH07_24_S14_R1_bismark_bt2_pe.deduplicated.sorted.bam",
+#                "/scratch/lspencer/DuMOAR/aligned/trim-before-concat/CH09_02_S15_R1_bismark_bt2_pe.deduplicated.sorted.bam",
+#                "/scratch/lspencer/DuMOAR/aligned/trim-before-concat/CH09_13_S16_R1_bismark_bt2_pe.deduplicated.sorted.bam",
+#                "/scratch/lspencer/DuMOAR/aligned/trim-before-concat/CH09_28_S17_R1_bismark_bt2_pe.deduplicated.sorted.bam",
+#                "/scratch/lspencer/DuMOAR/aligned/trim-before-concat/CH10_01_S18_R1_bismark_bt2_pe.deduplicated.sorted.bam",
+#                "/scratch/lspencer/DuMOAR/aligned/trim-before-concat/CH10_08_S19_R1_bismark_bt2_pe.deduplicated.sorted.bam",
+#                "/scratch/lspencer/DuMOAR/aligned/trim-before-concat/CH10_11_S20_R1_bismark_bt2_pe.deduplicated.sorted.bam"))
+# 
+# #### The following command reads sorted BAM files and calls methylation percentage per base, and creates a methylRaw object for CpG methylation. It also assigns minimum coverage of 2x and the treatments (in this case, the CO2 treatment)
+# 
+# meth_obj = processBismarkAln(location = file.list, sample.id = list("1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18", "19", "20"), 
+#                           assembly = "PGA_assembly.fasta", read.context="CpG", mincov=2, 
+#                           treatment = as.numeric((sample.info %>% arrange(sample_seq))$high_or_low_co2))
+# 
+# #### Save the MethylKit object; re-doing the previous step is memory/time intensive, so best to use the saved object moving forward. 
+# 
+# save(meth_obj, file = "/home/lspencer/DuMOAR/R/meth_obj")
+```
+
+#### Read in Bismark summary stats and some library prep stats 
+
+```{r}
+# Read in data from GoogleSheet 
+sample.info <- read_sheet("https://docs.google.com/spreadsheets/d/1ym0XnYVts98tIUCn0kIaU6VuvqxzV7LoSx9RHwLdiIs/edit?usp=sharing", "DNAisolations_only") %>% 
+  clean_names() %>% 
+  mutate_at(vars(tank, treatment, high_or_low_co2, developmental_stage, dna_siolation_batch), as.factor) %>%
+  
+  # Join with bismark summary report 
+  right_join(
+
+  # Read in bismark summary report
+    read_delim(file="../results/bismark/bismark_summary_report.txt", delim="\t") %>% mutate(File = str_replace_all(File, '_R1_bismark_bt2_pe.bam', "")) %>%
+  clean_names() %>% 
+   separate(file, into = c("a", "b", "sample_seq"), remove = F, sep = "_") %>%
+   mutate(sample_prep=paste(a, b, sep = "-")) %>%
+    mutate(sample_seq=as.numeric(str_replace_all(sample_seq, "S", ""))) %>%
+   select(file, sample_prep, sample_seq, everything(), -a, -b) %>%
+  mutate(perc_totalread_unique=unique_reads_remaining/total_reads, 
+         CpGs_Meth=100*methylated_cp_gs/(methylated_cp_gs+unmethylated_cp_gs), 
+         CHGs_Meth=100*methylated_chgs/(methylated_chgs+unmethylated_chgs), 
+         CHHs_Meth=100*methylated_ch_hs/(methylated_ch_hs+unmethylated_ch_hs)),
+
+  by = c("sample"="sample_prep"))
+
+save(sample.info, file="../data/sample.info")
+load(file="../data/sample.info")
+```
+
+### Investigate possible factors influencing low %CpGmeth 
+
+#### Correlation bubble plot 
+
+```{r}
+cor(sample.info %>% dplyr::select_if(is.numeric)) %>% corrplot(tl.cex=0.65) 
+```
+
+#### Look closer at factors that appear to correlate with CpGs_Meth to get correlation statistics  
+
+```{r, warning=FALSE}
+#trace("chart.Correlation", edit=T) #to edit function
+# In line 17, change the cex value for what you want, i changed it to 2
+
+chart.Correlation(sample.info %>% 
+                    select(CpGs_Meth, a260_280, mean_mw_highest_peak, aligned_reads, 
+                           unaligned_reads, ambiguously_aligned_reads, no_genomic_sequence, 
+                           unique_reads_remaining, total_cs, perc_totalread_unique, CHGs_Meth, CHHs_Meth), 
+                  histogram=F, pch=19) 
+```
+
+Correlations between CpGs_Meth and the following:  
+- a260_280: 0.52*   
+- mean_mw_highest_peak: 0.51*  
+- aligned_reads: 0.66**  
+- unaligned_reads: -0.77***   
+- ambiguously_aligned_reads: -0.60**   
+- no_genomic_sequence: -0.93***  
+- unique_reads_remaining: 0.73***  
+- total_cs: 0.72***  
+- perc_totalread_unique: 0.82***  
+- CHGs_Meth: -0.38  
+- CHHs_Meth: -0.59**  
+
+```{r, warning=FALSE,message=FALSE}
+ggplot(sample.info, aes(x=a260_280, y=CpGs_Meth)) + 
+  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  scale_color_manual(values=c("red", "blue")) +
+           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+  theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
+  annotate("text", x = 1.5, y = 75, label = "r = 0.52", size=6) + 
+ggtitle("% CpG Methylation ~ a260_280")
+```
+
+```{r, warning=FALSE,message=FALSE}
+ggplot(sample.info, aes(x=mean_mw_highest_peak, y=CpGs_Meth)) + 
+  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  scale_color_manual(values=c("red", "blue")) +
+           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+  theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
+  annotate("text", x = 10000, y = 100, label = "r = 0.51", size=6) + 
+ggtitle("% CpG Methylation ~ Mean MW (highest peak)")
+```
+
+```{r, warning=FALSE,message=FALSE}
+ggplot(sample.info, aes(x=aligned_reads, y=CpGs_Meth)) + 
+  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  scale_color_manual(values=c("red", "blue")) +
+           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+  theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
+  annotate("text", x = 6e6, y = 85, label = "r = 0.66", size=6) + 
+ggtitle("% CpG Methylation ~ # of aligned reads")
+```
+```{r, warning=FALSE,message=FALSE}
+ggplot(sample.info, aes(x=unaligned_reads, y=CpGs_Meth)) + 
+  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  scale_color_manual(values=c("red", "blue")) +
+           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+  theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
+  annotate("text", x = 1e7, y = 85, label = "r = -0.77", size=6) + 
+ggtitle("% CpG Methylation ~ # unaligned reads")
+```
+
+```{r, warning=FALSE,message=FALSE}
+ggplot(sample.info, aes(x=ambiguously_aligned_reads, y=CpGs_Meth)) + 
+  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  scale_color_manual(values=c("red", "blue")) +
+           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+  theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
+  annotate("text", x = 6e6, y = 85, label = "r = -0.60", size=6) + 
+ggtitle("% CpG Methylation ~ # ambiguously aligned reads")
+```
+```{r, warning=FALSE,message=FALSE}
+ggplot(sample.info, aes(x=no_genomic_sequence, y=CpGs_Meth)) + 
+  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  scale_color_manual(values=c("red", "blue")) +
+           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+  theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
+  annotate("text", x = 285, y = 75, label = "r = -0.93", size=6) + 
+ggtitle("% CpG Methylation ~ # unaligned- no genomic sequence")
+```
+
+
+No. of reads not aligning due to no genomic sequence corrlates very well with % methylation, but the actual # of reads is super low across all samples (<300!). What does this mean?! 
+
+
+```{r, warning=FALSE,message=FALSE}
+ggplot(sample.info, aes(x=unique_reads_remaining, y=CpGs_Meth)) + 
+  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  scale_color_manual(values=c("red", "blue")) +
+           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+  theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
+  annotate("text", x = 3.5e6, y = 95, label = "r = 0.73", size=6) + 
+ggtitle("% CpG Methylation ~ # unique aligned reads")
+```
+
+```{r, warning=FALSE,message=FALSE}
+ggplot(sample.info, aes(x=total_cs, y=CpGs_Meth)) + 
+  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  scale_color_manual(values=c("red", "blue")) +
+           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+  theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
+  annotate("text", x = 6e7, y = 90, label = "r = 0.72", size=6) + 
+ggtitle("% CpG Methylation ~ total # Cs")
+```
+```{r, warning=FALSE,message=FALSE}
+ggplot(sample.info, aes(x=perc_totalread_unique, y=CpGs_Meth)) + 
+  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  scale_color_manual(values=c("red", "blue")) +
+           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+  theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
+  annotate("text", x = .15, y = 85, label = "r = 0.82", size=6) + 
+ggtitle("% CpG Methylation ~ % total reads uniquely aligned")
+```
+
+```{r, warning=FALSE,message=FALSE}
+ggplot(sample.info, aes(x=CHGs_Meth, y=CpGs_Meth)) + 
+  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  scale_color_manual(values=c("red", "blue")) +
+           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+  theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
+  annotate("text", x = 2.25, y = 70, label = "r = -0.38", size=6) + 
+ggtitle("% CpG Methylation ~ % CHG Methylation")
+```
+
+```{r, warning=FALSE,message=FALSE}
+ggplot(sample.info, aes(x=CHHs_Meth, y=CpGs_Meth)) + 
+  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  scale_color_manual(values=c("red", "blue")) +
+           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+  theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
+  annotate("text", x = 30, y = 75, label = "r = -0.59", size=6) + 
+ggtitle("% CpG Methylation ~ % CHH Methylation")
+```
+
+
+### Load methylKit object that was created on Sedna 
+
+```{r}
+
+load("../results/methylkit/meth_obj")
+```
+
+#### What does the resulting methylkit object look like? 
+
+```{r}
+# Check out data for sample #1 
+head(meth_obj[[1]])
+```
+
+### Check the basic stats about the methylation data - coverage and percent methylation.
+
+#### First look at % CpG methylation for each sampe 
+
+```{r}
+for (i in 1:20) {
+getMethylationStats(meth_obj[[i]],plot=T,both.strands=TRUE)
+     mtext(paste("Sample", i, sep=" "), side=3, line = -6)
+}
+```
+#### Now look at coverage for each sample 
+
+```{r}
+for (i in 1:20) {
+ getCoverageStats(meth_obj[[i]],plot=TRUE,both.strands=TRUE) 
+   mtext(paste("Sample", i, sep=" "), side=3, line = -6)
+}
+```
+
+### Generate CpG methylation histograms after filtering for coverage
+
+#### Filter out loci where coverage is less than 5x or greater than 100x. 
+
+```{r}
+meth_5x=filterByCoverage(meth_obj,lo.count=5,lo.perc=NULL,
+                                      hi.count=100,hi.perc=NULL)
+save(meth_5x, file="../results/methylkit/meth_5x")
+```
+
+#### Now look at CpG methylation after filtering for 5x coverage 
+
+```{r}
+for (i in 1:20) {
+getMethylationStats(meth_5x[[i]],plot=T,both.strands=TRUE)
+  mtext(paste("Sample", i, sep=" "), side=3, line = -6)
+}
+```
+
+#### Filter out loci where coverage is less than 10x or greater than 100x. 
+
+```{r}
+meth_10x=filterByCoverage(meth_obj,lo.count=10,lo.perc=NULL,
+                                      hi.count=100,hi.perc=NULL)
+save(meth_10x, file="../results/methylkit/meth_10x")
+```
+
+#### Now look at CpG methylation after filtering for 10x coverage 
+
+```{r}
+for (i in 1:20) {
+getMethylationStats(meth_10x[[i]],plot=T,both.strands=TRUE)
+  mtext(paste("Sample", i, sep=" "), side=3, line = -6)
+}
+```
+
+### Unite methylation data into one object for methylkit functions
+
+#### column bind all samples, and destrand
+
+```{r}
+# meth_unite=methylKit::unite(meth_obj, destrand=TRUE, min.per.group=1L)
+# save(meth_unite, file = "../results/methylkit/meth_unite") #save object to file
+load(file = "../results/methylkit/meth_unite") #save object to file
+```
+
+### Cluster analysis 
+
+```{r}
+clusterSamples(meth_unite, dist="correlation", method="ward", plot=TRUE)
+```
+
+```{r}
+PCASamples(meth_unite, screeplot = T)
+PCASamples(meth_unite)
+```
+
+#### Generate PCA without weird samples (those with very low meth rates)
+
+```{r}
+meth_unite_nolows <- reorganize(methylObj = meth_unite, sample.ids = c("1", "2", "3", "4", "7", "8", "10", "11", "12", "15", "16", "17", "18", "20"),
+                                treatment = as.numeric((sample.info %>% arrange(sample_seq))$high_or_low_co2)[c(1:4, 7, 8, 10:12, 15:18, 20)])
+
+PCASamples(meth_unite_nolows)
+```
+
+
+#### Reshape methylation to inspect % methylation at various filtering thresholds 
+ 
+```{r}
+# Here - use all methylation data
+#load(file = "../results/methylkit/meth_unite") #save object to file
+
+meth_unite_reshaped <- meth_unite %>%
+  melt(id=c("chr", "start", "end", "strand"), value.name = "count") %>%
+  drop_na(count) %>%
+  mutate(stat=gsub('[0-9]+', '', variable)) %>%
+  mutate(sample=gsub('[a-zA-Z]+', '', variable)) %>%
+  select(-variable) %>%
+  pivot_wider(names_from = stat, values_from = count) %>%
+  mutate(percMeth = 100*(numCs/coverage)) %>%
+  mutate(sample=as.numeric(sample))
+
+save(meth_unite_reshaped, file = "../results/methylkit/meth_unite_reshaped")
+# load(file = "../results/methylkit/meth_unite_reshaped") 
+```
+
+```{r, cache=TRUE, eval=FALSE}
+# # Here - use a smaller data set, already filtered for min coverage 5x 
+# meth_unite_5x <- methylKit::unite(meth_5x, destrand=TRUE, min.per.group=1L)
+# save(meth_unite_5x, file = "../results/methylkit/meth_unite_5x") #save object to file
+# load(file = "../results/methylkit/meth_unite_5x") #save object to file
+# 
+# meth_unite_5x_reshaped <- meth_unite_5x %>%
+#   melt(id=c("chr", "start", "end", "strand"), value.name = "count") %>%
+#   drop_na(count) %>%
+#   mutate(stat=gsub('[0-9]+', '', variable)) %>%
+#   mutate(sample=gsub('[a-zA-Z]+', '', variable)) %>%
+#   select(-variable) %>%
+#   pivot_wider(names_from = stat, values_from = count) %>%
+#   mutate(percMeth = 100*(numCs/coverage)) %>%
+#   mutate(sample=as.numeric(sample))
+# 
+# save(meth_unite_5x_reshaped, file = "meth_unite_5x_reshaped")
+# save(meth_unite_5x_reshaped, file = "../results/methylkit/meth_unite_5x_reshaped")
+```
+
+#### No coverage threshold, what is mean % methylated and how many loci are there?
+
+```{r, warning=F}
+meth_unite_reshaped %>% 
+  group_by(sample) %>%
+  summarize(mean = mean(percMeth), nloci = n()) %>%
+  left_join(sample.info[c("treatment", "sample_seq", "high_or_low_co2")], by=c("sample"="sample_seq")) %>%
+  ggplot(aes(x=nloci, y=mean, label=sample)) + geom_point(aes(colour=high_or_low_co2)) + 
+  geom_label_repel(min.segment.length=0.25,aes(colour=high_or_low_co2)) + theme_minimal() +
+  ggtitle("% methylation ~ # loci, no coverage minimum") +
+  scale_color_manual(values = c("red", "blue")) + 
+  geom_smooth(method = "loess", se=T, color="black", linetype="dotted", fill="gray80")
+```
+
+#### 5x coverage, what is mean % methylated and how many loci are there?
+
+```{r, warning=F}
+meth_unite_reshaped %>% 
+  group_by(sample) %>%
+  filter(coverage>=5) %>%
+  summarize(mean = mean(percMeth), nloci = n()) %>%
+  left_join(sample.info[c("treatment", "sample_seq", "high_or_low_co2")], by=c("sample"="sample_seq")) %>%
+  ggplot(aes(x=nloci, y=mean, label=sample)) + geom_point(aes(colour=high_or_low_co2)) + 
+  geom_label_repel(min.segment.length=0.25,aes(colour=high_or_low_co2)) + theme_minimal() +
+  ggtitle("% methylation ~ # loci, 5x coverage minimum") +
+  scale_color_manual(values = c("red", "blue")) + 
+  geom_smooth(method = "loess", se=T, color="black", linetype="dotted", fill="gray80")
+```
+
+#### 10x coverage, what is mean % methylated and how many loci are there?
+
+```{r, warning=F}
+meth_unite_reshaped %>% 
+  group_by(sample) %>%
+  filter(coverage>=10) %>%
+  summarize(mean = mean(percMeth), nloci = n()) %>%
+  left_join(sample.info[c("treatment", "sample_seq", "high_or_low_co2")], by=c("sample"="sample_seq")) %>%
+  ggplot(aes(x=nloci, y=mean, label=sample)) + geom_point(aes(colour=high_or_low_co2)) + 
+  geom_label_repel(min.segment.length=0.25,aes(colour=high_or_low_co2)) + theme_minimal() +
+  ggtitle("% methylation ~ # loci, 10x coverage minimum") +
+  scale_color_manual(values = c("red", "blue")) + 
+  geom_smooth(method = "loess", se=T, color="black", linetype="dotted", fill="gray80")
+```
+
+#### What is mean % methylated with 15x coverage?
+
+```{r, warning=F}
+meth_unite_reshaped %>% 
+  group_by(sample) %>%
+  filter(coverage>=15) %>%
+  summarize(mean = mean(percMeth), nloci = n()) %>%
+  left_join(sample.info[c("treatment", "sample_seq", "high_or_low_co2")], by=c("sample"="sample_seq")) %>%
+  ggplot(aes(x=nloci, y=mean, label=sample)) + geom_point(aes(colour=high_or_low_co2)) + 
+  geom_label_repel(min.segment.length=0.25,aes(colour=high_or_low_co2)) + theme_minimal() +
+  ggtitle("% methylation ~ # loci, 15x coverage minimum") +
+  scale_color_manual(values = c("red", "blue")) + 
+  geom_smooth(method = "loess", se=T, color="black", linetype="dotted", fill="gray80")
+```
+
+#### Is % methylation a function of coverage within a sample? 
+
+The following samples have low CpG methylation: 5, 6, 9, 13, 14, 19. Check out each sample individually 
+
+```{r}
+meth_unite_reshaped %>%
+  filter(coverage>=5) %>%
+  ggplot() + geom_point(aes(x=coverage, y=percMeth), size=0.05) +
+  theme_minimal() + 
+  facet_wrap(~sample)
+```
