@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=bismark-mbd
-#SBATCH --output=/home/lspencer/DuMOAR/sbatch/bismark-20221109.txt
+#SBATCH --output=/home/lspencer/DuMOAR/sbatch/bismark-lane-4416-20221121.txt
 #SBATCH --mail-user=laura.spencer@noaa.gov
 #SBATCH --mail-type=ALL
 #SBATCH -c 20
@@ -15,10 +15,10 @@
 #source /home/lspencer/venv/bin/activate
 module load bio/bismark/0.24.0
 source /home/lspencer/venv/bin/activate
+module load bio/samtools/1.15.1
 
-# path variables not working, trying to just provide hard paths
-IN="/scratch/lspencer/DuMOAR/concatenated/after-trim/"
-OUT="/scratch/lspencer/DuMOAR/aligned/trim-before-concat/"
+IN="/scratch/lspencer/DuMOAR/trimmed/before-concat/4416/"
+OUT="/scratch/lspencer/DuMOAR/aligned/lanes-separately/4416/"
 
 # # Prepare genome for Bismark
 # # NOTE: for some reason using a path variable to specify genome folder didn't work
@@ -36,15 +36,15 @@ cd ${OUT}
 
 # NOTE: bismark guide recommends only 4 cores
 
-find ${IN}*_R1.fastq \
-| xargs basename -s _R1.fastq | xargs -I{} bismark \
+find ${IN}*_L001_R1_001_val_1.fq.gz \
+| xargs basename -s _L001_R1_001_val_1.fq.gz | xargs -I{} bismark \
 --bowtie2 \
 -genome /home/lspencer/references/dungeness/ \
 -p 4 \
 -score_min L,0,-0.6 \
 --non_directional \
--1 ${IN}{}_R1.fastq \
--2 ${IN}{}_R2.fastq \
+-1 ${IN}{}_L001_R1_001_val_1.fq.gz \
+-2 ${IN}{}_L001_R2_001_val_2.fq.gz \
 --output_dir ${OUT}
 
 # Deduplicate, call methylation status, extract methylation and create downstream amendable files.
@@ -68,7 +68,20 @@ bismark2report
 #Bismark summary report
 bismark2summary
 
-# Run multiqc to summarize fastqc reports
+# Run multiqc to summarize bismark reports
 multiqc . .
 
-# NOTE- THE RESULTING BAM FILES ARE NOT SORTED!  NEED TO SORT THEM FOR METHYLKIT.
+# Sort .bam files by coordinate - for MethylKit
+find *deduplicated.bam | \
+xargs basename -s .bam | \
+xargs -I{} samtools \
+sort {}.bam \
+-o {}.sorted.bam
+
+# Index sorted files for IGV
+# The "-@ 20" below specifies number of CPU threads to use.
+
+find *.sorted.bam | \
+xargs basename -s .sorted.bam | \
+xargs -I{} samtools \
+index -@ 20 {}.sorted.bam
