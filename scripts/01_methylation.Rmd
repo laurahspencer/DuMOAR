@@ -37,6 +37,8 @@ if (!require("BiocManager", quietly = TRUE))
 
 BiocManager::install("methylKit")
 require(methylKit)
+
+`%!in%` = Negate(`%in%`)
 ```
 
 ### Obtain session information
@@ -134,7 +136,18 @@ sample.info <- read_sheet("https://docs.google.com/spreadsheets/d/1ym0XnYVts98tI
          CHGs_Meth=100*methylated_chgs/(methylated_chgs+unmethylated_chgs), 
          CHHs_Meth=100*methylated_ch_hs/(methylated_ch_hs+unmethylated_ch_hs)),
 
-  by = c("sample"="sample_prep"))
+  by = c("sample"="sample_prep")) %>%
+
+# add mbd librar prep stats
+  left_join(
+  
+  read_sheet("https://docs.google.com/spreadsheets/d/1ym0XnYVts98tIUCn0kIaU6VuvqxzV7LoSx9RHwLdiIs/edit?usp=sharing", "MBD_calcs") %>% 
+  clean_names() %>% 
+  select(sample, total_recovery_ng, percent_recovery_percent, library_bioanlyzer_mean_fragment_size_bp,
+         library_bioanalyzer_molarity_pmol_l, qubit_concentration_ng_u_l), 
+
+  by = "sample")
+
 
 save(sample.info, file="../data/sample.info")
 load(file="../data/sample.info")
@@ -161,13 +174,61 @@ chart.Correlation(sample.info %>%
                   histogram=F, pch=19) 
 ```
 
+Question asked by Zymo (creater of PicoMethyl kit)  - any correlation between the samples with abnormal CpG methylation and samples that had more yield from the MBD enrichment step?
+
+Answer: no not really 
+
+```{r}
+chart.Correlation(sample.info %>% 
+                    select(CpGs_Meth, total_recovery_ng, percent_recovery_percent, 
+                           library_bioanlyzer_mean_fragment_size_bp, library_bioanalyzer_molarity_pmol_l, 
+                           qubit_concentration_ng_u_l), 
+                  histogram=F, pch=19) 
+# CpG methylation is not associated with MBD yield
+
+
+# Use this code to generate 
+# sample.info %>% select(sample_seq, high_or_low_co2, CpGs_Meth, 
+#                        total_recovery_ng, percent_recovery_percent, library_bioanlyzer_mean_fragment_size_bp, 
+#                        library_bioanalyzer_molarity_pmol_l, qubit_concentration_ng_u_l) %>%
+#   pivot_longer(cols = c("total_recovery_ng", "percent_recovery_percent", "library_bioanlyzer_mean_fragment_size_bp", 
+#                        "library_bioanalyzer_molarity_pmol_l", "qubit_concentration_ng_u_l"), names_to = "MBD.stat") %>%
+#   mutate(MBD.stat=as.factor(MBD.stat)) %>%
+# 
+# ggplot(aes(x=value, y=CpGs_Meth)) + 
+#   geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+#   scale_color_manual(values=c("red", "blue")) +
+#            geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+#   theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
+# ggtitle("% CpG Methylation ~ MBD Stats") + 
+#   facet_wrap(~MBD.stat, scales = "free")
+
+# Weak correlation with MBD library fragment size, but not convincing
+ggplot(sample.info, aes(x=library_bioanlyzer_mean_fragment_size_bp, y=CpGs_Meth)) +
+  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) +
+  scale_color_manual(values=c("red", "blue")) +
+           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) +
+  theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
+    annotate("text", x = 500, y = 17, label = "r = 0.42", size=6) + 
+  ggtitle("% CpG Methylation ~ library_bioanlyzer_mean_fragment_size_bp") 
+
+# Low CpG methylation is associated with high CHH methylation 
+ggplot(sample.info, aes(x=CHHs_Meth, y=CpGs_Meth)) +
+  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) +
+  scale_color_manual(values=c("red", "blue")) +
+           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) +
+  theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
+    annotate("text", x = 33, y = 70, label = "r = -0.59", size=6) + 
+  ggtitle("% CpG Methylation ~ CHHs_Meth") 
+```
+
 Correlations between CpGs_Meth and the following:  
-- a260_280: 0.52*   
-- mean_mw_highest_peak: 0.51*  
-- aligned_reads: 0.66**  
+- a260_280: 0.52* - meh     
+- mean_mw_highest_peak: 0.51* - not predictive, but low CpG meth samples have lower mean MW.    
+- aligned_reads: 0.66** - low CpG meth = fewer aligned reads    
 - unaligned_reads: -0.77***   
 - ambiguously_aligned_reads: -0.60**   
-- no_genomic_sequence: -0.93***  
+- no_genomic_sequence: -0.93*** - lower CpG meth with more unalgning due to no genomic sequence; contamination? Very few reads, though (<300)     
 - unique_reads_remaining: 0.73***  
 - total_cs: 0.72***  
 - perc_totalread_unique: 0.82***  
@@ -379,7 +440,7 @@ PCASamples(meth_unite)
  
 ```{r}
 # Here - use all methylation data
-#load(file = "../results/methylkit/meth_unite") #save object to file
+load(file = "../results/methylkit/meth_unite") #save object to file
 
 meth_unite_reshaped <- meth_unite %>%
   melt(id=c("chr", "start", "end", "strand"), value.name = "count") %>%
@@ -454,11 +515,11 @@ meth_unite_reshaped %>%
 meth_unite_reshaped %>% 
   group_by(sample) %>%
   filter(coverage>=10) %>%
-  summarize(mean = mean(percMeth), nloci = n()) %>%
+  summarize(mean = mean(percMeth), nloci = n()) %>% 
   left_join(sample.info[c("treatment", "sample_seq", "high_or_low_co2")], by=c("sample"="sample_seq")) %>%
   ggplot(aes(x=nloci, y=mean, label=sample)) + geom_point(aes(colour=high_or_low_co2)) + 
   geom_label_repel(min.segment.length=0.25,aes(colour=high_or_low_co2)) + theme_minimal() +
-  ggtitle("% methylation ~ # loci, 10x coverage minimum") +
+  ggtitle("% methylation ~ # loci, 10x coverage minimum") + xlab("# Loci") + ylab("Mean % CpG Methylation") +
   scale_color_manual(values = c("red", "blue")) + 
   geom_smooth(method = "loess", se=T, color="black", linetype="dotted", fill="gray80")
 ```
@@ -479,7 +540,9 @@ meth_unite_reshaped %>%
 ```
 #### Is % methylation a function of coverage within a sample? 
 
-The following samples have low CpG methylation: 5, 6, 9, 13, 14, 19. Check out each sample individually 
+The following samples have low CpG methylation: 5, 6, 8, 9, 13, 14, 16,  19. Check out each sample individually 
+
+Weird samples have lots of loci with 0% methylation 
 
 ```{r}
 meth_unite_reshaped %>%
@@ -490,27 +553,62 @@ meth_unite_reshaped %>%
 ```
 
 Good samples: 
-1, 2, 3, 4, 7
-8, 10, 11, 15, 17, 18, 20
+control pCO2: 1, 2, 3, 4, 7
+high pCO2:    10, 11, 12, 15, 17, 18, 20
+
+```{r}
+meth_unite_reshaped %>% 
+  group_by(sample) %>%
+  filter(coverage>=10) %>%
+  #filter(sample %in%  c("1", "2", "3", "4", "7", "10", "11", "12", "15", "17", "18", "20")) %>%
+  #filter(sample %!in%  c("1", "2", "3", "4", "7", "10", "11", "12", "15", "17", "18", "20")) %>%
+  summarize(mean = mean(percMeth), nloci = n()) %>% 
+  arrange(sample) %>% select(nloci) %>% write_clip()
+
+```
+
+
+```{r}
+sample.info %>% filter(sample_seq %!in%  c("1", "2", "3", "4", "7", "10", "11", "12", "15", "17", "18", "20")) %>%
+  summarise(mean.aligned=mean(perc_totalread_unique), sd.aligned=sd(perc_totalread_unique),
+            min.aligned=min(perc_totalread_unique), max.aligned=max(perc_totalread_unique),
+            mean.reads=mean(total_reads), sd.reads=sd(total_reads),
+            mean.CpGs=mean(total_cs), sd.CpGs=sd(total_cs))
+
+
+sample.info %>% filter(sample_seq %in%  c("1", "2", "3", "4", "7", "10", "11", "12", "15", "17", "18", "20")) %>%
+  summarise(mean.aligned=mean(perc_totalread_unique), sd.aligned=sd(perc_totalread_unique),
+            min.aligned=min(perc_totalread_unique), max.aligned=max(perc_totalread_unique),
+            mean.reads=mean(total_reads), sd.reads=sd(total_reads),
+            mean.CpGs=mean(total_cs), sd.CpGs=sd(total_cs))
+
+sample.info %>% arrange(sample_seq) %>% select(sample_seq, sample) %>% 
+  filter(sample_seq %!in%  c("1", "2", "3", "4", "7", "10", "11", "12", "15", "17", "18", "20")) %>% write_clip()
+
+```
+
+
+
+### Run analyses without the 7 low-CpG methylation samples 
 
 #### Generate PCA without weird samples (those with very low meth rates)
 
 ```{r}
 meth_unite_nolows <- reorganize(methylObj = meth_unite, 
-                                sample.ids = c("1", "2", "3", "4", "7", "8", "10", "11", "15", "17", "18", "20"),
+                                sample.ids = c("1", "2", "3", "4", "7", "10", "11", "8", "12", "15", "17", "18", "20"),
                                 treatment = as.numeric((sample.info %>% 
-                                                          arrange(sample_seq))$high_or_low_co2)[c(1:4, 7, 8, 10, 11, 15, 17, 18, 20)])
+                                                          arrange(sample_seq))$high_or_low_co2)[c(1:4, 7, 10, 11, 12, 15, 17, 18, 20)])
 PCASamples(meth_unite_nolows)
 ```
 
 ```{r}
-(sample.info %>% arrange(sample_seq))[c(1:4, 7, 8, 10, 11, 15, 17, 18, 20),]
+(sample.info %>% arrange(sample_seq))[c(1:4, 7, 10, 11, 12, 15, 17, 18, 20),]
 ```
 
 ```{r}
-meth_obj_nolow <- reorganize(methylObj = meth_obj, sample.ids = c("1", "2", "3", "4", "7", "8", "10", "11", "15", "17", "18", "20"),
+meth_obj_nolow <- reorganize(methylObj = meth_obj, sample.ids = c("1", "2", "3", "4", "7", "10", "11", "12", "15", "17", "18", "20"),
                              treatment = as.numeric((sample.info %>% 
-                                                          arrange(sample_seq))$high_or_low_co2)[c(1:4, 7, 8, 10, 11, 15, 17, 18, 20)])
+                                                          arrange(sample_seq))$high_or_low_co2)[c(1:4, 7, 10, 11, 12, 15, 17, 18, 20)])
 
 meth_5x=filterByCoverage(meth_obj_nolow,
                          lo.count=5,lo.perc=NULL,
@@ -520,31 +618,32 @@ meth_unite_5x=methylKit::unite(meth_5x, destrand=TRUE, min.per.group=5L)
 
 PCA.5x <- PCASamples(meth_unite_5x, obj.return = TRUE) #Run a PCA analysis on percent methylation for all samples. methylKit uses prcomp to create the PCA matrix
 summary(PCA.5x)  
-#PC1=13.7% PC2=10.5% 
+#PC1=11.55% PC2=10.6% 
 
 
 meth_10x=filterByCoverage(meth_obj_nolow,
                          lo.count=10,lo.perc=NULL,
                                       hi.count=100,hi.perc=NULL)
 
-meth_unite_10x=methylKit::unite(meth_10x, destrand=TRUE, min.per.group=5L)
+meth_unite_10x=methylKit::unite(meth_10x, destrand=TRUE)  # by not setting min.per.group manually, all samples must meet threshold for locus to be retained
+meth_unite_10x
 
 PCA.10x <- PCASamples(meth_unite_10x, obj.return = TRUE) #Run a PCA analysis on percent methylation for all samples. methylKit uses prcomp to create the PCA matrix
 summary(PCA.10x)  
-#PC1=13.7% PC2=10.5% 
+#PC1=11.9% PC2=10.4% 
 ```
 
 ```{r}
 # meth_unite_10x_allsamples - all samples used, all require to have 10x all loci
 
-plotCustomization <- (sample.info %>% arrange(sample_seq))[c(1:4, 7, 8, 10, 11, 15, 17, 18, 20),c("high_or_low_co2", "sample_seq", "tank")] %>%
+plotCustomization <- (sample.info %>% arrange(sample_seq))[c(1:4, 7, 10, 11, 12, 15, 17, 18, 20),c("high_or_low_co2", "sample_seq", "tank")] %>%
   mutate(color=case_when(high_or_low_co2 == "H" ~ "firebrick3", TRUE ~ "dodgerblue3"),
          symbol=case_when(high_or_low_co2 == "H" ~ 16, TRUE ~ 17))
 
 # Save size: width=650 height=600
 par(mar = c(5, 5, 1, 1)) #Specify inner and outer margins
 PCA.figure <- ordiplot(PCA.10x, choices = c(1, 2), type = "none", display = "sites", cex = 0.4, xlab = "", ylab = "", xaxt = "n", yaxt = "n") #Use ordiplot to create base biplot. Do not add any points
-points(PCA.figure, "sites", col = as.character(plotCustomization$color), pch = plotCustomization$symbol, cex = 2.5)  #use points
+points(PCA.figure, "sites", col = as.character(plotCustomization$color), pch = plotCustomization$symbol, cex = 2.2)  #use points
 #text(PCA.figure$sites, col = as.character(plotCustomization$color), labels=plotCustomization$tank, cex=1.5) #use tank number 
 
 #Add multiple white boxes on top of the default black box to manually change the color
@@ -561,26 +660,26 @@ box(col = "white")
 #ordiellipse(PCA.filtered, plotCustomization$population, show.groups = "HC", col = "firebrick3") #Add confidence ellipse around the samples in elevated pCO2
 #ordiellipse(PCA.filtered, plotCustomization$population, show.groups = "SS", col = "dodgerblue3") #Add confidence ellipse around the samples in ambient pCO2
 axis(side =  1, labels = TRUE, col = "grey80", cex.axis = 1.7) #Add x-axis
-mtext(side = 1, text = "PC 1 (13.7%)", line = 3, cex = 1.5) #Add x-axis label
+mtext(side = 1, text = "PC 1 (11.9%)", line = 3, cex = 1.5) #Add x-axis label
 axis(side =  2, labels = TRUE, col = "grey80", cex.axis = 1.7) #Add y-axis
-mtext(side = 2, text = "PC 2 (10.5%)", line = 3, cex = 1.5) #Add y-axis label
-legend("bottomright", 
+mtext(side = 2, text = "PC 2 (10.4%)", line = 3, cex = 1.5) #Add y-axis label
+legend("topleft", 
        pch = c(16, 17), 
        legend = c("High pCO2", "Low pCO2"), 
        col = c(c("firebrick3", "dodgerblue3")), 
-       cex = 1.6, bty = "n") #Add a legend with information about ambient and elevated samples
+       cex = 1.3, bty = "n") #Add a legend with information about ambient and elevated samples
 ```
 
 ### Save PC scores and R object for possible integration with other data
 
-NOTE: this PCA was run with _all_ methylated loci data after filtering for 105x across at minimum 5 samples per treatment. 
+NOTE: this PCA was run with _all_ methylated loci data after filtering for 10x across all 11 samples. 
 
 ```{r}
 save(PCA.10x, file="../results/methylkit/PCA.10x")
 write_delim(data.frame(PCA.10x$x) %>% tibble::rownames_to_column("sample"), "../results/methylkit/PC-scores-methylation-10x.tab",  delim = '\t', col_names = TRUE)
 ```
 
-# Also try to filter for 10x across all samples? 
+# Also try to filter for 10x across all samples? (this is including the low-CpG methylation samples)
 
 ```{r}
 meth_10x_allsamples=filterByCoverage(meth_obj,
@@ -602,8 +701,8 @@ plotCustomization_allsamples <- (sample.info %>% arrange(sample_seq))[,c("high_o
 # Save size: width=650 height=600
 par(mar = c(5, 5, 1, 1)) #Specify inner and outer margins
 PCA.figure_allsamples <- ordiplot(PCA.10x_allsamples, choices = c(1, 2), type = "none", display = "sites", cex = 0.4, xlab = "", ylab = "", xaxt = "n", yaxt = "n") #Use ordiplot to create base biplot. Do not add any points
-points(PCA.figure_allsamples, "sites", col = as.character(plotCustomization_allsamples$color), pch = plotCustomization_allsamples$symbol, cex = 2.5)  #use points
-#text(PCA.figure_allsamples$sites, col = as.character(plotCustomization_allsamples$color), labels=plotCustomization_allsamples$tank, cex=1.5) #use tank number 
+#points(PCA.figure_allsamples, "sites", col = as.character(plotCustomization_allsamples$color), pch = plotCustomization_allsamples$symbol, cex = 2.5)  #use points
+text(PCA.figure_allsamples$sites, col = as.character(plotCustomization_allsamples$color), labels=plotCustomization_allsamples$sample_seq, cex=1.3) #use tank number 
 
 #Add multiple white boxes on top of the default black box to manually change the color
 box(col = "white")
@@ -626,7 +725,7 @@ legend("bottomright",
        pch = c(16, 17), 
        legend = c("High pCO2", "Low pCO2"), 
        col = c(c("firebrick3", "dodgerblue3")), 
-       cex = 1.6, bty = "n") #Add a legend with information about ambient and elevated samples
+       cex = 1.3, bty = "n") #Add a legend with information about ambient and elevated samples
 ```
 
 ```{r, warning=FALSE}
@@ -805,10 +904,10 @@ dist.manhat.DMLs.df <- reshape2::melt(as.matrix(dist.manhat.DMLs), varnames = c(
 ```
 
 TO DO
+- Methylation correlations from MethylKit 
 - randomize which samples are "Treatment" and run 10 permutations to see now many loci are DMLs then 
 - Try to pull SNPs from RNASeq data to identify pop structure 
-- AI 
-- Methylation correlations from MethylKit 
+- Research cool software for integrating meth+rnaseq. AI options for integration? 
 
 
 
