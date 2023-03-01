@@ -3,52 +3,43 @@ title: "mito-explore"
 output: md_document
 ---
 
-
-# Blast Approach comparing _M mag_ mitochondria sequence to _M mag_ genome
+# Blast Approach comparing *M mag* mitochondria sequence to *M mag* genome
 
 Make blast index
 
-```
-/home/shared/ncbi-blast-2.11.0+/bin/makeblastdb \
--in ../data/PGA_assembly.fasta \
--dbtype nucl \
--out ../results/04-mito-hunt/PGA_assembly
-```
-
-
+    /home/shared/ncbi-blast-2.11.0+/bin/makeblastdb \
+    -in ../data/PGA_assembly.fasta \
+    -dbtype nucl \
+    -out ../results/04-mito-hunt/PGA_assembly
 
 Blasting Mitochondria feature fasta to genome
 
-
-```
-/home/shared/ncbi-blast-2.11.0+/bin/blastn \
--query ../data/Mmag-mito-features.fa \
--db ../results/04-mito-hunt/PGA_assembly \
--out ../results/04-mito-hunt/mit-genome_blastn_01.tab \
--evalue 1E-20 \
--num_threads 48 \
--max_target_seqs 10 \
--outfmt 6
-```
-
+    /home/shared/ncbi-blast-2.11.0+/bin/blastn \
+    -query ../data/Mmag-mito-features.fa \
+    -db ../results/04-mito-hunt/PGA_assembly \
+    -out ../results/04-mito-hunt/mit-genome_blastn_01.tab \
+    -evalue 1E-20 \
+    -num_threads 48 \
+    -max_target_seqs 10 \
+    -outfmt 6
 
 ```{bash}
 cat ../results/04-mito-hunt/mit-genome_blastn_01.tab
 ```
-```
-/home/shared/ncbi-blast-2.11.0+/bin/blastn \
--query ../data/Mmag-mito-features.fa \
--db ../results/04-mito-hunt/PGA_assembly \
--out ../results/04-mito-hunt/mit-genome_blastn_02.tab \
--evalue 1E-50 \
--num_threads 48 \
--max_target_seqs 10 \
--outfmt 6
-```
+
+    /home/shared/ncbi-blast-2.11.0+/bin/blastn \
+    -query ../data/Mmag-mito-features.fa \
+    -db ../results/04-mito-hunt/PGA_assembly \
+    -out ../results/04-mito-hunt/mit-genome_blastn_02.tab \
+    -evalue 1E-50 \
+    -num_threads 48 \
+    -max_target_seqs 10 \
+    -outfmt 6
 
 ```{bash}
 cat ../results/04-mito-hunt/mit-genome_blastn_02.tab
 ```
+
 ```{bash}
 /home/shared/ncbi-blast-2.11.0+/bin/blastn \
 -task blastn \
@@ -60,10 +51,24 @@ cat ../results/04-mito-hunt/mit-genome_blastn_02.tab
 -max_target_seqs 1 \
 -outfmt 6
 ```
+
 ```{bash}
 cat ../results/04-mito-hunt/mit-genome_blastn_03.tab
 ```
 
+```{bash}
+/home/shared/ncbi-blast-2.11.0+/bin/blastn \
+-task blastn \
+-query ../data/Mmag-mito-features.fa \
+-db ../results/04-mito-hunt/PGA_assembly \
+-out ../results/04-mito-hunt/mit-genome_blastn_08.tab \
+-evalue 1E-20 \
+-num_threads 48 \
+-max_target_seqs 1 \
+-outfmt 6
+
+cat ../results/04-mito-hunt/mit-genome_blastn_08.tab
+```
 
 ```{bash}
 /home/shared/ncbi-blast-2.11.0+/bin/blastn \
@@ -82,7 +87,6 @@ cat ../results/04-mito-hunt/mit-genome_blastn_04.tab
 ```
 
 ## Using Complete Mito genome
-
 
 ```{bash}
 /home/shared/ncbi-blast-2.11.0+/bin/blastn \
@@ -110,3 +114,44 @@ cat ../results/04-mito-hunt/mit-genome_blastn_05.tab
 
 cat ../results/04-mito-hunt/mit-genome_blastn_06.tab
 ```
+
+```{bash}
+/home/shared/ncbi-blast-2.11.0+/bin/blastn \
+-query ../data/Mmag_mito.fa \
+-db ../results/04-mito-hunt/PGA_assembly \
+-out ../results/04-mito-hunt/mit-genome_blastn_07.tab \
+-evalue 1E-20 \
+-num_threads 48 \
+-max_target_seqs 1 \
+-outfmt 6
+
+cat ../results/04-mito-hunt/mit-genome_blastn_07.tab
+```
+
+# Using Mitochondria as Database
+
+```
+/home/shared/ncbi-blast-2.11.0+/bin/makeblastdb \
+-in ../data/Mmag_mito.fa \
+-dbtype nucl \
+-out ../results/04-mito-hunt/Mmag_mito
+```
+
+
+```
+/home/shared/ncbi-blast-2.11.0+/bin/blastn \
+-query ../data/PGA_assembly.fasta \
+-db ../results/04-mito-hunt/Mmag_mito \
+-out ../results/04-mito-hunt/genome-mito_blastn_01.tab \
+-evalue 1E-20 \
+-num_threads 48 \
+-max_target_seqs 1 \
+-outfmt 6
+
+
+```
+
+```{bash}
+cat ../results/04-mito-hunt/genome-mito_blastn_01.tab
+```
+

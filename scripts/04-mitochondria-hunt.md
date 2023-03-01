@@ -119,6 +119,38 @@ Blasting Mitochondria feature fasta to genome
     -task blastn \
     -query ../data/Mmag-mito-features.fa \
     -db ../results/04-mito-hunt/PGA_assembly \
+    -out ../results/04-mito-hunt/mit-genome_blastn_08.tab \
+    -evalue 1E-20 \
+    -num_threads 48 \
+    -max_target_seqs 1 \
+    -outfmt 6
+
+    cat ../results/04-mito-hunt/mit-genome_blastn_08.tab
+
+    ## Warning: [blastn] Examining 5 or more matches is recommended
+    ## lcl|NC_050675.1_gene_8   PGA_scaffold16__99_contigs__length_13714835 85.211  284 40  2   211 493 12231571    12231289    4.48e-84    316
+    ## lcl|NC_050675.1_gene_14  contig_2968_pilon__unscaffolded 99.107  224 2   0   1   224 41  264 2.94e-108   396
+    ## lcl|NC_050675.1_gene_28  contig_4859_pilon__unscaffolded 99.333  300 2   0   1   300 300 1   2.79e-149   533
+    ## lcl|NC_050675.1_gene_29  contig_4859_pilon__unscaffolded 100.000 297 0   0   1   297 590 294 4.69e-151   536
+    ## lcl|NC_050675.1_gene_30  contig_4859_pilon__unscaffolded 100.000 68  0   0   1   68  664 597 1.49e-27    123
+    ## lcl|NC_050675.1_gene_32  contig_4859_pilon__unscaffolded 99.717  353 1   0   1   353 3109    3461    9.61e-180   633
+    ## lcl|NC_050675.1_gene_33  contig_4859_pilon__unscaffolded 97.015  67  2   0   1   67  3619    3685    2.63e-24    113
+    ## lcl|NC_050675.1_gene_34  contig_4859_pilon__unscaffolded 98.485  66  1   0   1   66  3686    3751    7.35e-25    115
+    ## lcl|NC_050675.1_gene_38  contig_185_pilon__unscaffolded  72.840  729 139 21  46  755 30065   29377   1.12e-103   381
+    ## lcl|NC_050675.1_gene_38  contig_185_pilon__unscaffolded  72.840  729 139 21  46  755 100325  99637   1.12e-103   381
+    ## lcl|NC_050675.1_gene_39  contig_5718_pilon__unscaffolded 84.731  799 83  15  1   788 1568    2338    0.0 859
+    ## lcl|NC_050675.1_gene_39  contig_5718_pilon__unscaffolded 93.333  75  4   1   784 858 3712    3785    6.63e-22    110
+    ## lcl|NC_050675.1_gene_40  contig_4859_pilon__unscaffolded 100.000 71  0   0   1   71  6392    6322    3.77e-29    129
+    ## lcl|NC_050675.1_cds_YP_009926422.1_3 PGA_scaffold16__99_contigs__length_13714835 85.211  284 40  2   211 493 12231571    12231289    4.48e-84    316
+    ## lcl|NC_050675.1_cds_YP_009926426.1_7 contig_2968_pilon__unscaffolded 99.107  224 2   0   1   224 41  264 2.94e-108   396
+    ## lcl|NC_050675.1_cds_YP_009926429.1_10    contig_4859_pilon__unscaffolded 99.333  300 2   0   1   300 300 1   2.79e-149   533
+    ## lcl|NC_050675.1_cds_YP_009926430.1_11    contig_4859_pilon__unscaffolded 100.000 297 0   0   1   297 590 294 4.69e-151   536
+    ## lcl|NC_050675.1_cds_YP_009926431.1_12    contig_4859_pilon__unscaffolded 99.717  353 1   0   1   353 3109    3461    9.61e-180   633
+
+    /home/shared/ncbi-blast-2.11.0+/bin/blastn \
+    -task blastn \
+    -query ../data/Mmag-mito-features.fa \
+    -db ../results/04-mito-hunt/PGA_assembly \
     -out ../results/04-mito-hunt/mit-genome_blastn_04.tab \
     -evalue 1E-50 \
     -num_threads 48 \
@@ -281,3 +313,105 @@ Blasting Mitochondria feature fasta to genome
     ## NC_050675.1  contig_444_pilon___fragment_11__unscaffolded    79.383  713 102 29  30238   30930   56662   55975   5.08e-126   460
     ## NC_050675.1  contig_91_pilon__unscaffolded   79.296  710 104 27  30238   30930   27252   27935   6.57e-125   457
     ## NC_050675.1  contig_5765_pilon__unscaffolded 85.621  459 34  26  30239   30693   8769    8339    8.50e-124   453
+
+    /home/shared/ncbi-blast-2.11.0+/bin/blastn \
+    -query ../data/Mmag_mito.fa \
+    -db ../results/04-mito-hunt/PGA_assembly \
+    -out ../results/04-mito-hunt/mit-genome_blastn_07.tab \
+    -evalue 1E-20 \
+    -num_threads 48 \
+    -max_target_seqs 1 \
+    -outfmt 6
+
+    cat ../results/04-mito-hunt/mit-genome_blastn_07.tab
+
+    ## Warning: [blastn] Examining 5 or more matches is recommended
+    ## NC_050675.1  contig_2968_pilon__unscaffolded 85.434  3515    367 103 35709   39160   264 3696    0.0 3520
+    ## NC_050675.1  contig_2968_pilon__unscaffolded 85.885  3273    339 90  35016   38235   495 3697    0.0 3371
+    ## NC_050675.1  contig_2968_pilon__unscaffolded 85.636  3084    307 97  36630   39658   259 3261    0.0 3116
+    ## NC_050675.1  contig_2968_pilon__unscaffolded 85.171  2340    253 74  35016   37316   1414    3698    0.0 2313
+    ## NC_050675.1  contig_2968_pilon__unscaffolded 85.701  2140    209 66  37559   39658   265 2347    0.0 2167
+    ## NC_050675.1  contig_2968_pilon__unscaffolded 84.748  1390    159 42  35016   36383   2336    3694    0.0 1343
+    ## NC_050675.1  contig_2968_pilon__unscaffolded 85.145  1205    114 43  38475   39658   265 1425    0.0 1173
+    ## NC_050675.1  contig_2968_pilon__unscaffolded 90.537  782 55  12  1   770 1239    2013    0.0 1016
+    ## NC_050675.1  contig_2968_pilon__unscaffolded 88.903  784 65  15  1   770 319 1094    0.0 946
+    ## NC_050675.1  contig_2968_pilon__unscaffolded 88.875  782 64  17  1   770 2159    2929    0.0 941
+    ## NC_050675.1  contig_2968_pilon__unscaffolded 90.256  626 51  9   1   623 3075    3693    0.0 809
+    ## NC_050675.1  contig_2968_pilon__unscaffolded 87.832  452 47  8   35016   35462   3250    3698    6.39e-145   523
+    ## NC_050675.1  contig_2968_pilon__unscaffolded 99.242  264 2   0   8152    8415    1   264 5.04e-131   477
+
+# Using Mitochondria as Database
+
+    /home/shared/ncbi-blast-2.11.0+/bin/makeblastdb \
+    -in ../data/Mmag_mito.fa \
+    -dbtype nucl \
+    -out ../results/04-mito-hunt/Mmag_mito
+
+    /home/shared/ncbi-blast-2.11.0+/bin/blastn \
+    -query ../data/PGA_assembly.fasta \
+    -db ../results/04-mito-hunt/Mmag_mito \
+    -out ../results/04-mito-hunt/genome-mito_blastn_01.tab \
+    -evalue 1E-20 \
+    -num_threads 48 \
+    -max_target_seqs 1 \
+    -outfmt 6
+
+    cat ../results/04-mito-hunt/genome-mito_blastn_01.tab
+
+    ## PGA_scaffold16__99_contigs__length_13714835  NC_050675.1 85.211  284 40  2   12231289    12231571    5441    5159    1.32e-76    291
+    ## PGA_scaffold22__59_contigs__length_10008237  NC_050675.1 78.711  667 87  29  9907893 9908519 30930   30279   7.16e-108   394
+    ## PGA_scaffold22__59_contigs__length_10008237  NC_050675.1 76.348  575 92  30  9909891 9910433 30283   29721   4.53e-70    268
+    ## contig_1622_pilon__unscaffolded  NC_050675.1 87.204  211 24  3   184 392 480 271 1.73e-62    237
+    ## contig_1622_pilon__unscaffolded  NC_050675.1 84.444  225 29  6   168 389 35332   35111   2.26e-56    217
+    ## contig_1622_pilon__unscaffolded  NC_050675.1 82.379  227 33  7   168 390 36253   36030   1.37e-48    191
+    ## contig_185_pilon__unscaffolded   NC_050675.1 76.518  1597    246 86  29377   30895   29386   30931   0.0 752
+    ## contig_185_pilon__unscaffolded   NC_050675.1 76.518  1597    246 86  99637   101155  29386   30931   0.0 752
+    ## contig_2928_pilon__unscaffolded  NC_050675.1 87.739  522 54  10  4   521 37003   37518   1.98e-174   601
+    ## contig_2928_pilon__unscaffolded  NC_050675.1 86.226  530 55  16  5   521 35147   35671   1.21e-161   558
+    ## contig_2928_pilon__unscaffolded  NC_050675.1 86.681  473 44  13  4   468 309 770 4.45e-146   507
+    ## contig_2928_pilon__unscaffolded  NC_050675.1 84.411  526 69  11  1   521 37919   38436   1.60e-145   505
+    ## contig_2928_pilon__unscaffolded  NC_050675.1 84.259  540 60  19  1   521 36063   36596   5.76e-145   503
+    ## contig_2932_pilon__unscaffolded  NC_050675.1 85.404  1288    134 35  7   1259    38038   36770   0.0 1288
+    ## contig_2932_pilon__unscaffolded  NC_050675.1 83.908  1305    141 50  1   1259    38972   37691   0.0 1182
+    ## contig_2932_pilon__unscaffolded  NC_050675.1 83.732  1297    148 49  1   1253    37124   35847   0.0 1168
+    ## contig_2932_pilon__unscaffolded  NC_050675.1 84.131  1191    144 37  1   1164    36188   35016   0.0 1110
+    ## contig_2932_pilon__unscaffolded  NC_050675.1 85.133  1056    107 34  242 1260    39658   38616   0.0 1035
+    ## contig_2932_pilon__unscaffolded  NC_050675.1 88.379  697 55  20  580 1261    765 80  0.0 815
+    ## contig_2932_pilon__unscaffolded  NC_050675.1 90.069  433 37  5   1   429 431 1   6.04e-160   556
+    ## contig_2932_pilon__unscaffolded  NC_050675.1 91.071  112 9   1   1153    1263    39658   39547   1.20e-37    150
+    ## contig_2968_pilon__unscaffolded  NC_050675.1 85.434  3515    367 103 264 3696    35709   39160   0.0 3520
+    ## contig_2968_pilon__unscaffolded  NC_050675.1 85.885  3273    339 90  495 3697    35016   38235   0.0 3371
+    ## contig_2968_pilon__unscaffolded  NC_050675.1 85.636  3084    307 97  259 3261    36630   39658   0.0 3116
+    ## contig_2968_pilon__unscaffolded  NC_050675.1 85.171  2340    253 74  1414    3698    35016   37316   0.0 2313
+    ## contig_2968_pilon__unscaffolded  NC_050675.1 85.701  2140    209 66  265 2347    37559   39658   0.0 2167
+    ## contig_2968_pilon__unscaffolded  NC_050675.1 84.748  1390    159 42  2336    3694    35016   36383   0.0 1343
+    ## contig_2968_pilon__unscaffolded  NC_050675.1 85.145  1205    114 43  265 1425    38475   39658   0.0 1173
+    ## contig_2968_pilon__unscaffolded  NC_050675.1 90.537  782 55  12  1239    2013    1   770 0.0 1016
+    ## contig_2968_pilon__unscaffolded  NC_050675.1 88.903  784 65  15  319 1094    1   770 0.0 946
+    ## contig_2968_pilon__unscaffolded  NC_050675.1 88.875  782 64  17  2159    2929    1   770 0.0 941
+    ## contig_2968_pilon__unscaffolded  NC_050675.1 90.256  626 51  9   3075    3693    1   623 0.0 809
+    ## contig_2968_pilon__unscaffolded  NC_050675.1 87.832  452 47  8   3250    3698    35016   35462   3.22e-150   523
+    ## contig_2968_pilon__unscaffolded  NC_050675.1 99.242  264 2   0   1   264 8152    8415    2.54e-136   477
+    ## contig_3489_pilon__unscaffolded  NC_050675.1 86.621  441 42  16  1   433 37514   37083   1.88e-135   472
+    ## contig_3489_pilon__unscaffolded  NC_050675.1 84.564  447 46  18  3   434 35665   35227   1.92e-120   422
+    ## contig_3489_pilon__unscaffolded  NC_050675.1 86.154  390 29  17  55  433 765 390 3.24e-113   398
+    ## contig_3489_pilon__unscaffolded  NC_050675.1 83.447  441 53  17  2   433 38432   38003   1.51e-111   392
+    ## contig_3489_pilon__unscaffolded  NC_050675.1 81.718  454 56  16  1   434 36592   36146   7.11e-100   353
+    ## contig_396_pilon__unscaffolded   NC_050675.1 78.392  398 66  12  79648   80040   30907   30525   1.02e-63    241
+    ## contig_4401_pilon___fragment_5__unscaffolded NC_050675.1 78.004  491 92  12  36805   37291   30452   30930   7.79e-80    294
+    ## contig_444_pilon___fragment_11__unscaffolded NC_050675.1 79.325  711 106 25  55975   56662   30930   30238   7.13e-130   460
+    ## contig_4678_pilon__unscaffolded  NC_050675.1 76.944  373 58  20  21929   22288   30305   29948   6.76e-48    187
+    ## contig_4678_pilon__unscaffolded  NC_050675.1 73.599  553 88  39  22884   23405   29911   29386   1.47e-39    159
+    ## contig_4859_pilon__unscaffolded  NC_050675.1 99.125  686 3   2   1   683 20794   21479   0.0 1230
+    ## contig_4859_pilon__unscaffolded  NC_050675.1 89.174  702 34  28  3077    3758    23600   24279   0.0 837
+    ## contig_4859_pilon__unscaffolded  NC_050675.1 100.000 144 0   0   4874    5017    31006   31149   4.57e-72    267
+    ## contig_4859_pilon__unscaffolded  NC_050675.1 85.321  218 17  12  1003    1209    22160   22373   2.17e-55    211
+    ## contig_4859_pilon__unscaffolded  NC_050675.1 83.590  195 24  7   6522    6713    33242   33431   7.92e-45    176
+    ## contig_4859_pilon__unscaffolded  NC_050675.1 81.166  223 28  10  2398    2609    23022   23241   4.77e-42    167
+    ## contig_4859_pilon__unscaffolded  NC_050675.1 100.000 73  0   0   6321    6393    33080   33152   1.34e-32    135
+    ## contig_4859_pilon__unscaffolded  NC_050675.1 93.846  65  2   1   2743    2807    23366   23428   6.35e-21    97.1
+    ## contig_5718_pilon__unscaffolded  NC_050675.1 89.442  663 41  15  1694    2338    30930   30279   0.0 809
+    ## contig_5718_pilon__unscaffolded  NC_050675.1 76.348  575 92  30  3712    4254    30283   29721   1.32e-72    268
+    ## contig_5765_pilon__unscaffolded  NC_050675.1 85.621  459 34  26  8339    8769    30693   30239   1.36e-127   453
+    ## contig_6518_pilon__unscaffolded  NC_050675.1 78.969  718 106 28  32  721 30230   30930   2.12e-126   448
+    ## contig_91_pilon__unscaffolded    NC_050675.1 79.296  710 104 26  27252   27935   30238   30930   3.27e-129   457
