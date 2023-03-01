@@ -4,7 +4,7 @@ output: md_document
 ---
 
 
-# Using blast
+# Blast Approach comparing _M mag_ mitochondria sequence to _M mag_ genome
 
 Make blast index
 

@@ -1,4 +1,4 @@
-# Using blast
+# Blast Approach comparing *M mag* mitochondria sequence to *M mag* genome
 
 Make blast index
 
