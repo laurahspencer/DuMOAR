@@ -18,5 +18,11 @@ grep '>' ../data/Mmag_assembly.fasta.filtered.renamed.fa | head -40
 ```
 
 ```{bash}
+md5sum ../data/Mmag_assembly.fasta.filtered.renamed.fa
+```
+
+
+
+```{bash}
 grep '>' ../data/Mmag_assembly.fasta.filtered.renamed.fa | wc -l
 ```

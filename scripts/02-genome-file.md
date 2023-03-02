@@ -60,6 +60,10 @@ PGA\_assembly.fasta.filtered.renamed.fa
     ## >PGA_scaffold38__30_contigs__length_10707134
     ## >PGA_scaffold39__82_contigs__length_19157343
 
+    md5sum ../data/Mmag_assembly.fasta.filtered.renamed.fa
+
+    ## 121a7cc9c3287c6fbcae742b5cd6d65c  ../data/Mmag_assembly.fasta.filtered.renamed.fa
+
     grep '>' ../data/Mmag_assembly.fasta.filtered.renamed.fa | wc -l
 
     ## 2752
