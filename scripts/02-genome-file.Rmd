@@ -3,16 +3,16 @@ title: "02-genome-file"
 output: md_document
 ---
 
-
 # Generating a genome file to use
 
-This is the file submitted to NCBI - 
+This is the file submitted to NCBI -
 
 PGA_assembly.fasta.filtered.renamed.fa
 
 ```{bash}
 head ../data/Mmag_assembly.fasta.filtered.renamed.fa
 ```
+
 ```{bash}
 grep '>' ../data/Mmag_assembly.fasta.filtered.renamed.fa | head -40
 ```
@@ -21,8 +21,25 @@ grep '>' ../data/Mmag_assembly.fasta.filtered.renamed.fa | head -40
 md5sum ../data/Mmag_assembly.fasta.filtered.renamed.fa
 ```
 
+```{bash}
+grep '>' ../data/Mmag_assembly.fasta.filtered.renamed.fa | wc -l
+```
+
+# Scaffold only
 
 
 ```{bash}
-grep '>' ../data/Mmag_assembly.fasta.filtered.renamed.fa | wc -l
+head ../data/Mmag_scaffold.fa
+```
+
+```{bash}
+grep '>' ../data/Mmag_scaffold.fa | head -100
+```
+
+```{bash}
+md5sum ../data/Mmag_scaffold.fa
+```
+
+```{bash}
+grep '>' ../data/Mmag_scaffold.fa | wc -l
 ```
