@@ -8,3 +8,11 @@
 *.fq
 Metacarcinus-magister-v1.0.a1.63b722ce105df-repeatmasker.repeats.fna
 Metacarcinus-magister-v1.0.a1.63b722ce105df-repeatmasker.repeats.gff3
+PGA_assembly.gff3
+PGA_assembly.scaffolds_only.gff3
+meth_obj
+meth_unite_reshaped
+meth_unite
+MiSeq_5x
+meth_5x
+PGA_assembly.fasta
