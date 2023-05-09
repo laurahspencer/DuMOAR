@@ -1,0 +1,84 @@
+
+=================================
+ Project Summary
+---------------------------------
+# Project Information
+  Project Name         : Dungeness crab genome annotation
+  Owner                : laurahspencer
+  Create Date          : 2022-10-27 18:13:59
+
+# Project Properties
+  Genus                : Metacarcinus
+  Species              : magister
+  Project Type         : invertebrate
+  Prefix               : M_mag
+  Common Name          : Dungeness crab
+  NCBI Taxonomy ID     : 29965
+  Genetic Code         : Standard Code
+
+# Input FASTA
+  Filename           : PGA_assembly.fasta
+  Filesize           : 705.18 MB
+  Number of Sequence : 2769
+
+=================================
+ Job Information
+---------------------------------
+# Official Gene Set
+  >EvidenceModeler
+  - version : 1.1.1
+
+    # The Source jobs for the consensus Gene job
+      >BRAKER
+      - version : 2.1.5
+      - BAM File : 
+
+      >GeneMarkES
+      - version : 4.48
+      - Max_contig : 5000000
+      - Max Mask : 5000
+      - Min Contig : 50000
+      - Max Gap : 5000
+
+      >SNAP
+      - version : 2017-05-17
+      - HMM : D.melanogaster.hmm
+
+      >BLAST nucleotide (blastn)
+      - version : 2.12.0
+      - Transcript Database : NCBI refseq invertebrate
+      - Expect : 1e-30
+      - Max Hits Per Region (culling limit) : 10
+      - Word Size : 11
+      - Gap Open : 5
+      - Gap Extend : 2
+      - Maximum HSP Distinace : 30000
+
+      >BLAT
+      - version : v2.5
+      - Transcripts FASTA file : NCBI refseq invertebrate
+      - Minimum Identity : 95
+
+# The functional Jobs on the OGS
+  >BLAST protein vs protein (blastp)
+  - version : 2.12.0
+  - Protein Data Set : SwissProt
+  - Matrix : BLOSUM62
+  - Word Size : 3
+  - Gap Open : 11
+  - Gap Extend : 1
+  - Maximum HSP Distinace : 30000
+  - Expect : 1e-8
+  - Output type : tab
+
+  >NCBI BLAST protein vs protein (blastp)
+  - version : 2.12.0
+  - Protein Data Set : NCBI refseq invertebrate (Protein)
+  - Matrix : BLOSUM62
+  - Word Size : 3
+  - Gap Open : 11
+  - Gap Extend : 1
+  - Maximum HSP Distinace : 30000
+  - Expect : 1e-8
+  - Output type : tab
+
