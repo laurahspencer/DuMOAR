@@ -17,6 +17,6 @@ conda activate gawn-0.3.5
 # Put your genome and transcriptome fasta files (uncompressed) in 03_data
 # Edit the parameters in 02_info/gawn_config.sh (you can rename the file)
 
-cd /home/lspencer/references/dungeness/gawn-master
+cd /home/lspencer/references/dungeness/gawn-scaffold-only
 
 ./gawn 02_infos/gawn_config.sh

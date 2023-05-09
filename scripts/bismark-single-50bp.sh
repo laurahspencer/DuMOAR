@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=bismark-mbd
-#SBATCH --output=/home/lspencer/DuMOAR/sbatch/bismark-20230422.txt
+#SBATCH --output=/home/lspencer/DuMOAR/sbatch/bismark-20221109.txt
 #SBATCH --mail-user=laura.spencer@noaa.gov
 #SBATCH --mail-type=ALL
 #SBATCH -c 20
@@ -12,6 +12,7 @@
 #     and making methylation calls.
 # Data was generated from Dungeness crab exposed to two pH conditions during early life.
 
+#source /home/lspencer/venv/bin/activate
 module load bio/bismark/0.24.0
 source /home/lspencer/venv/bin/activate
 
@@ -22,11 +23,11 @@ OUT="/scratch/lspencer/DuMOAR/aligned/trim-before-concat/"
 # # Prepare genome for Bismark
 # # NOTE: for some reason using a path variable to specify genome folder didn't work
 # # Also- this only needs to be run once
-bismark_genome_preparation \
---verbose \
---parallel 20 \
---bowtie2 \
-/home/lspencer/references/dungeness/
+# bismark_genome_preparation \
+# --verbose \
+# --parallel 20 \
+# --bowtie2 \
+# /home/lspencer/references/dungeness/
 
 # Run Bismark to align trimmed reads
 

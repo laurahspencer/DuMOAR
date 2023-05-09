@@ -48,7 +48,7 @@ load(file="/home/lspencer/DuMOAR/R/sample.info")
 #### The following command reads sorted BAM files and calls methylation percentage per base, and creates a methylRaw object for CpG methylation. It also assigns minimum coverage of 2x and the treatments (in this case, the CO2 treatment)
 
 meth_obj = processBismarkAln(location = file.list, sample.id = list("1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18", "19", "20"), 
-                          assembly = "PGA_assembly.fasta", read.context="CpG", mincov=2, 
+                          assembly = "PGA_assembly.scaffolds_only.fasta", read.context="CpG", mincov=2, 
                           treatment = as.numeric((sample.info %>% arrange(sample_seq))$high_or_low_co2))
 
 #### Save the MethylKit object; re-doing the previous step is memory/time intensive, so best to use the saved object moving forward. 
