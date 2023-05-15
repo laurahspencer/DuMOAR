@@ -611,6 +611,9 @@ PCASamples(meth_unite_nolows)
 ```{r}
 (sample.info %>% arrange(sample_seq))[c(1:4, 7, 8, 10, 11, 12, 15, 17, 18, 20),]
 ```
+## ERROR FOUND IN THE BELOW CODE CHUNK 
+
+THE UNITE() FUNCTION ERRONEOUSLY RE-ASSIGNS SAMPLE IDS USING THE NUMBERS 1-13, WHILE THE CORRECT SAMPLE ID'S ARE 1,2,3,4,7,8,10,11,12,15,17,18,20.  
 
 ```{r}
 meth_obj_nolow <- reorganize(methylObj = meth_obj, sample.ids = c("1", "2", "3", "4", "7", "8", "10", "11", "12", "15", "17", "18", "20"),
@@ -639,27 +642,30 @@ meth_unite_10x=methylKit::unite(meth_10x, destrand=TRUE)  # by not setting min.p
 PCA.10x <- PCASamples(meth_unite_10x, obj.return = TRUE) #Run a PCA analysis on percent methylation for all samples. methylKit uses prcomp to create the PCA matrix
 summary(PCA.10x)  
 #PC1=13.5% PC2=9.6% 
+
+save(meth_10x, file="../results/methylkit/meth_10x")
+save(meth_unite_10x, file="../results/methylkit/meth_unite_10x")
 ```
 
 
 ```{r}
-meth_10x[[1]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==21392)
-meth_10x[[2]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==21392)
-meth_10x[[3]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==21392)
-meth_10x[[4]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==21392)
-meth_10x[[5]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==21392)
-meth_10x[[6]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==21392)
-meth_10x[[7]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==21392)
-meth_10x[[8]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==21392)
-meth_10x[[9]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==21392)
-meth_10x[[10]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==21392)
-meth_10x[[11]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==21392)
-meth_10x[[12]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==21392)
-meth_10x[[13]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==21392)
+meth_10x[[1]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==527803)
+meth_10x[[2]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==527803)
+meth_10x[[3]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==527803)
+meth_10x[[4]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==527803)
+meth_10x[[5]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==527803)
+meth_10x[[6]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==527803)
+meth_10x[[7]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==527803)
+meth_10x[[8]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==527803)
+meth_10x[[9]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==527803)
+meth_10x[[10]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==527803)
+meth_10x[[11]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==527803)
+meth_10x[[12]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==527803)
+meth_10x[[13]] %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==527803)
 ```
 
 ```{r}
-meth_unite_10x %>% getData() #%>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==21392)
+meth_unite_10x %>% getData() %>% filter(chr=="PGA_scaffold0__40_contigs__length_4818635" & start==527803)
 ```
 
 
