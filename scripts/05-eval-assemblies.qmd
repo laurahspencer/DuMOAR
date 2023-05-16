@@ -21,6 +21,7 @@ library(pheatmap)
 library(RColorBrewer)
 library(data.table)
 library(DT)
+library(ShortRead)
 library(Biostrings)
 knitr::opts_chunk$set(
   echo = TRUE,         # Display code chunks
@@ -33,7 +34,8 @@ knitr::opts_chunk$set(
 )
 ```
 
-# Rpubs link: 
+Rpubs link
+
 https://rpubs.com/sr320/1042307
 
 Check out which assembly has best gene set 
@@ -91,6 +93,48 @@ tail ../results/PGA_assembly.scaffolds_only.gene.gff3
 wc -l ../results/PGA_assembly.scaffolds_only.gene.gff3
 ```
 
+
+## grab fasta
+
+```{r, engine='bash'}
+/home/shared/bedtools2/bin/bedtools getfasta \
+-fi ../data/Mmag_scaffold.fa \
+-bed ../results/PGA_assembly.scaffolds_only.gene.gff3 \
+-fo ../results/GAWN-gene.fa
+```
+
+
+```{r, engine='bash'}
+/home/shared/bedtools2/bin/bedtools getfasta \
+-fi ../data/Mmag_scaffold.fa \
+-bed ../results/PGA_assembly.scaffolds_only.gene.gff3 \
+| tail
+```
+
+
+```{r, cache=TRUE}
+# Read in FastA file
+fasta_filegawn <- "../results/GAWN-gene.fa"
+sequences <- readDNAStringSet(fasta_filegawn)
+
+# Calculate lengths
+lengths <- width(sequences)
+
+# Create a data frame
+df <- data.frame(length = lengths)
+
+# Plot histogram with ggplot2
+ggplot(df, aes(x = length)) +
+  geom_histogram(binwidth = 1000, fill = "blue", color = "black") +
+  xlab("Sequence Length") +
+  ylab("Frequency") +
+  ggtitle("Histogram of Sequence Lengths") +
+  theme_minimal()
+```
+
+
+
+
 # GenSas
 
 
@@ -133,6 +177,48 @@ tail ../data/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.genes.fna
 ```
 
 
+
+## grab fasta
+
+```{r, engine='bash'}
+/home/shared/bedtools2/bin/bedtools getfasta \
+-fi ../data/Mmag_scaffold.fa \
+-bed ../results/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.gene-only.gff3 \
+-fo ../results/GenSAS-gene.fa
+```
+
+
+```{r, engine='bash', eval=TRUE}
+/home/shared/bedtools2/bin/bedtools getfasta \
+-fi ../data/Mmag_scaffold.fa \
+-bed ../results/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.gene-only.gff3 \
+| tail
+```
+
+
+```{r, eval=TRUE}
+# Read in FastA file
+fasta_filegen <- "../results/GenSAS-gene.fa"
+sequences <- readDNAStringSet(fasta_filegen)
+
+# Calculate lengths
+lengths <- width(sequences)
+
+# Create a data frame
+df <- data.frame(length = lengths)
+
+# Plot histogram with ggplot2
+ggplot(df, aes(x = length)) +
+  geom_histogram(binwidth = 1000, fill = "blue", color = "black") +
+  xlab("Sequence Length") +
+  ylab("Frequency") +
+  ggtitle("Histogram of Sequence Lengths") +
+  theme_minimal()
+```
+
+
+
+
 # Genome
 
 
@@ -151,5 +237,4 @@ grep '>' ../data/Mmag_scaffold.fa | head
 /home/shared/samtools-1.12/samtools faidx ../data/Mmag_scaffold.fa 
 ```
 
-# BUSCO
 
