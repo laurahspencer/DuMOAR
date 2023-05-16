@@ -32,23 +32,124 @@ knitr::opts_chunk$set(
   fig.align = "center" # Align plots to the center
 )
 ```
-## Quarto
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+# Rpubs link: 
+https://rpubs.com/sr320/1042307
 
-## Running Code
+Check out which assembly has best gene set 
 
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
 
-```{r}
-1 + 1
+https://github.com/laurahspencer/DuMOAR/issues/25
+
+### GAWN (Genome Annotation Without Nightmares):
+
+Following the GAWN instructions I ran the script GAWN-annotation.sh using the scaffold-only genome, the transcriptome that Giles generated for me, the Swissprot database, and the config file gawn_config.sh. All resulting files are on Google Drive here, but the files <100MB are also in this repo here. Feel free to drop any files resulting from your work in either location.
+
+
+Gawn: https://gannet.fish.washington.edu/seashell/snaps/PGA_assembly.scaffolds_only.gff3
+
+### GenSaS:
+
+All resulting files are on Google Drive here, and files <100 MB are also in this repo here (which includes all except for the repeat elements).
+If anyone has a GenSaS account I can share the project with you, I just need to know your username.
+Note that GenSaS was run with the full genome, so any resulting files should be filtered for only the scaffolds.
+
+
+GenSas
+
+https://gannet.fish.washington.edu/seashell/snaps/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.genes.gff3
+
+https://gannet.fish.washington.edu/seashell/snaps/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.genes.fna
+
+---
+
+# GAWN
+
+```{r, engine='bash'}
+cd ../data
+
+curl -O https://gannet.fish.washington.edu/seashell/snaps/PGA_assembly.scaffolds_only.gff3
 ```
 
-You can add options to executable code like this
 
-```{r}
-#| echo: false
-2 * 2
+
+```{r, engine='bash', eval=TRUE}
+head ../data/PGA_assembly.scaffolds_only.gff3
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+
+```{r, engine='bash'}
+awk '$3=="gene"' ../data/PGA_assembly.scaffolds_only.gff3 > ../results/PGA_assembly.scaffolds_only.gene.gff3
+```
+
+
+```{r, engine='bash', eval=TRUE}
+tail ../results/PGA_assembly.scaffolds_only.gene.gff3
+```
+
+```{r, engine='bash', eval=TRUE}
+wc -l ../results/PGA_assembly.scaffolds_only.gene.gff3
+```
+
+# GenSas
+
+
+https://gannet.fish.washington.edu/seashell/snaps/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.genes.gff3
+
+https://gannet.fish.washington.edu/seashell/snaps/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.genes.fna
+
+```{r, engine='bash'}
+cd ../data
+
+curl -O https://gannet.fish.washington.edu/seashell/snaps/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.genes.gff3
+curl -O https://gannet.fish.washington.edu/seashell/snaps/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.genes.fna
+
+
+```
+
+```{r, engine='bash', eval=TRUE}
+head ../data/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.genes.gff3
+```
+
+
+```{r, engine='bash'}
+awk '$3=="gene"' ../data/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.genes.gff3 | awk '!/unscaffolded/' > ../results/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.gene-only.gff3
+```
+
+
+```{r, engine='bash', eval=TRUE}
+tail ../results/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.gene-only.gff3
+```
+
+```{r, engine='bash', eval=TRUE}
+wc -l ../results/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.gene-only.gff3
+```
+
+```{r, engine='bash', eval=TRUE}
+grep -c ">" ../data/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.genes.fna
+```
+```{r, engine='bash', eval=TRUE}
+tail ../data/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.genes.fna
+```
+
+
+# Genome
+
+
+```{r, engine='bash', eval=TRUE}
+md5sum ../data/Mmag_scaffold.fa
+```
+
+```{r, engine='bash', eval=TRUE}
+grep '>' ../data/Mmag_scaffold.fa | wc -l
+```
+```{r, engine='bash', eval=TRUE}
+grep '>' ../data/Mmag_scaffold.fa | head
+```
+
+```{r, engine='bash'}
+/home/shared/samtools-1.12/samtools faidx ../data/Mmag_scaffold.fa 
+```
+
+# BUSCO
+
