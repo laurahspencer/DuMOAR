@@ -157,6 +157,10 @@ head ../data/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.genes.gff3
 
 
 ```{r, engine='bash'}
+awk '!/unscaffolded/' ../data/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.genes.gff3 > ../results/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.genes-scaffold.gff3
+```
+
+```{r, engine='bash'}
 awk '$3=="gene"' ../data/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.genes.gff3 | awk '!/unscaffolded/' > ../results/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.gene-only.gff3
 ```
 
