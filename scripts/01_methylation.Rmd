@@ -762,8 +762,8 @@ clusterSamples(meth_unite_10x, dist="correlation", method="ward", plot=TRUE)
 
 
 ```{r}
-meth_unite_5x #340,394 loci
-meth_unite_10x #146,761 loci 
+getData(meth_unite_5x) %>% nrow() #340,394 loci @ 5x coverage
+getData(meth_unite_10x) %>% nrow() #146,761 loci @ 10x coverage
 ```
 
 Percent methylation matrix (rows=region/base, columns=sample) can be extracted from methylBase object by using percMethylation function. This can be useful for downstream analyses. 
@@ -788,8 +788,8 @@ mean(perc.meth, na.rm=TRUE)
 #79.2%
 
 sample.info %>% dplyr::select(high_or_low_co2, sample_seq) %>% arrange(sample_seq)
-(perc.meth %>% as.matrix())[,c("1","2","3","4","7","12")] # low pCO2 
-(perc.meth %>% as.matrix())[,c("10","11","15", "17", "18", "20")] # high pCO2 
+(perc.meth %>% as.matrix())[,c("1","2","3","4","7","12")] %>% head() # low pCO2 
+(perc.meth %>% as.matrix())[,c("10","11","15", "17", "18", "20")] %>% head() # high pCO2 
 
 # Mean % methylation for each treatment 
 mean((perc.meth %>% as.matrix())[,c("1","2","3","4","7","12")], na.rm=TRUE) # Low CO2 exposed - 79.5%
@@ -815,18 +815,23 @@ myDiff=calculateDiffMeth(meth_unite_10x)
 ```
 
 ```{r}
-# get hyper methylated bases - 843 loci
-(myDiff25p.hyper=getMethylDiff(myDiff,difference=25,qvalue=0.01,type="hyper"))
-#
-# get hypo methylated bases - 593 loci 
-(myDiff25p.hypo=getMethylDiff(myDiff,difference=25,qvalue=0.01,type="hypo"))
-#
-#
-# get all differentially methylated bases - 1,427 loci
-(myDiff25p=getMethylDiff(myDiff,difference=25,qvalue=0.01))
-
 # get  deferentially methylated bases using 12% difference and save to files - 12,971 loci 
-(myDiff12p=getMethylDiff(myDiff,difference=12,qvalue=0.01))
+myDiff12p=getMethylDiff(myDiff,difference=12,qvalue=0.01)
+paste("Number diff. methylated loci with 12% difference: ", getData(myDiff12p) %>% nrow())
+
+# get all differentially methylated bases - 1,427 loci
+myDiff25p=getMethylDiff(myDiff,difference=25,qvalue=0.01)
+paste("Number diff. methylated loci with 25% difference: ", getData(myDiff25p) %>% nrow())
+
+# Extract hypo and hyper methylated loci. Here "type" must think that the low pCO2 is the experimental treatment, since hypo and hyper are switched. 
+# get hypo methylated bases - 843 loci
+myDiff25p.hyper=getMethylDiff(myDiff,difference=25,qvalue=0.01,type="hyper") 
+paste("Number loci hypo-methylated in high pCO2 with 25% difference: ", getData(myDiff25p.hyper) %>% nrow())
+
+# get hypo methylated bases - 593 loci 
+myDiff25p.hypo=getMethylDiff(myDiff,difference=25,qvalue=0.01,type="hypo")
+paste("Number loci hyper-methylated in high pCO2 with 25% difference: ", getData(myDiff25p.hypo) %>% nrow())
+  
 #write.table(myDiff12p, file = "../analyses/DMLs/myDiff12p.tab", sep = "\t", col.names = TRUE)
 #write_delim(getData(myDiff12p) %>%  mutate(start = start-1, end = end+1) %>% dplyr::select(chr, start, end, meth.diff),
 #            "../analyses/DMLs/dml12.bed",  delim = '\t', col_names = TRUE) 
@@ -877,16 +882,15 @@ meth_unite_reshaped %>%
   filter(sample %in% c(1,2,3,4,7,12, #low pCO3
                        8,10,11,15,17,18,20)) %>% #high pCO2
   mutate(locus=paste(chr, start-1, sep=".")) %>%  # Create locus column; subtract 1 from the "start" column to match dml25
-  filter(locus %in% (dml25 %>%filter(meth.diff<0) %>% mutate(locus=paste(chr, start, sep=".")))$locus) %>% #keep loci with meth.diff < 0
+  filter(locus %in% (dml25 %>%filter(meth.diff<0) %>% mutate(locus=paste(chr, start, sep=".")))$locus) %>% #keep loci with meth.diff < 0, higher meth in high pCO2
   left_join(sample.info[,c("high_or_low_co2", "sample_seq")], by=c("sample"="sample_seq")) %>%
   group_by(high_or_low_co2, locus) %>%
   summarise(mean = mean(percMeth)) %>%
   ggplot(aes(x=high_or_low_co2, y=mean)) + geom_violin() + geom_jitter() + 
   theme_minimal() + xlab("pCO2 treatment") +
-  ggtitle("Loci with higher methylation in OA (n=451)")
+  ggtitle("Loci with higher methylation in OA (n=593)")
 
 
-# meth.diff > 0 = loci where methylation rate is HIGHER in high pCO2 treatment 
 #dml25 %>%filter(meth.diff>0) %>% nrow()
 
 meth_unite_reshaped %>%
@@ -894,13 +898,13 @@ meth_unite_reshaped %>%
   filter(sample %in% c(1,2,3,4,7,12, #low pCO3
                      8,10,11,15,17,18,20)) %>% #high pCO2
   mutate(locus=paste(chr, start-1, sep=".")) %>%  # Create locus column; subtract 1 from the "start" column to match dml25
-  filter(locus %in% (dml25 %>%filter(meth.diff>0) %>% mutate(locus=paste(chr, start, sep=".")))$locus) %>% #keep loci with meth.diff > 0
+  filter(locus %in% (dml25 %>%filter(meth.diff>0) %>% mutate(locus=paste(chr, start, sep=".")))$locus) %>% #keep loci with meth.diff > 0, lower meth in high pCO2
   left_join(sample.info[,c("high_or_low_co2", "sample_seq")], by=c("sample"="sample_seq")) %>%
   group_by(high_or_low_co2, locus) %>%
   summarise(mean = mean(percMeth)) %>%
   ggplot(aes(x=high_or_low_co2, y=mean)) + geom_violin() + geom_jitter() + 
   theme_minimal() + xlab("pCO2 treatment") +
-  ggtitle("Loci with lower methylation in OA (n=662)")
+  ggtitle("Loci with lower methylation in OA (n=834)")
 ```
 ###  Subset the filtered methylation count dataframe for only those that are differentially methylated. Save object to file. 
 
@@ -1148,7 +1152,7 @@ pivot_longer(cols = c(H, L),
              median=median(mean_meth),)
 ```
 
-# For ALL loci, calculate difference between mean % methylation in H : L for divergent bar plot 
+### For ALL loci, calculate difference between mean % methylation in H : L for divergent bar plot 
 
 ```{r}
 #Calculate ratio between mean % methylation in High pCO2 : Low pCO2 (i.e. control) 
@@ -1221,9 +1225,82 @@ ggplot(DMLs_heatmap, aes(sample, chr_start, fill= percMeth)) + xlab("Sample") + 
 
 sample.info[c("high_or_low_co2", "sample_seq", "tank")]
 ```
+### Alignment to mitochondrial DNA to estimate conversion rate 
+
+```{r}
+# Join sample info with bismark summary report 
+
+(sample.info.mito <- sample.info %>% 
+   dplyr::select(sample, tank, treatment, high_or_low_co2, sample_seq, developmental_stage, 
+                 dna_siolation_batch, perc_totalread_unique, CpGs_Meth, CHGs_Meth, CHHs_Meth) %>% 
+  
+  right_join(
+
+  # Read in bismark summary report
+    read_delim(file="../results/bismark/mito/bismark_summary_report.txt", delim="\t") %>% mutate(File = str_replace_all(File, '_R1_bismark_bt2_pe.bam', "")) %>%
+  clean_names() %>% 
+   separate(file, into = c("a", "b", "sample_seq"), remove = F, sep = "_") %>%
+   mutate(sample_prep=paste(a, b, sep = "-")) %>%
+    mutate(sample_seq=as.numeric(str_replace_all(sample_seq, "S", ""))) %>%
+   #dplyr::select(file, sample_prep, sample_seq, everything(), -a, -b) %>%
+  mutate(perc_totalread_unique_mito=unique_reads_remaining/total_reads, 
+         CpGs_Meth_mito=100*methylated_cp_gs/(methylated_cp_gs+unmethylated_cp_gs), 
+         CHGs_Meth_mito=100*methylated_chgs/(methylated_chgs+unmethylated_chgs), 
+         CHHs_Meth_mito=100*methylated_ch_hs/(methylated_ch_hs+unmethylated_ch_hs)) %>% 
+    dplyr::select(sample_prep, perc_totalread_unique_mito, CpGs_Meth_mito, CHGs_Meth_mito, CHHs_Meth_mito),
+
+  by = c("sample"="sample_prep")) %>%
+  mutate(included=case_when(
+    sample_seq== 1 ~ "yes",
+    sample_seq== 2 ~ "yes",
+    sample_seq== 3 ~ "yes",     
+    sample_seq== 4 ~ "yes",
+    sample_seq== 7 ~ "yes",
+    sample_seq== 12 ~ "yes",
+    sample_seq== 10 ~ "yes",
+    sample_seq== 11 ~ "yes",
+    sample_seq== 15 ~ "yes",
+    sample_seq== 17 ~ "yes",
+    sample_seq== 18 ~ "yes",
+    sample_seq== 20 ~ "yes",
+    TRUE ~ "no")))
 
 
-# BONEYARD 
+# **Good samples:** all have mean % methylation >= 70% and nloci meeting 10x > 3e5
+# control pCO2: 1, 2, 3, 4, 7, 12
+# high pCO2:    10, 11, 15, 17, 18, 20
+
+ggplot(sample.info.mito, aes(x=CpGs_Meth_mito, y=CpGs_Meth)) + 
+  geom_point(aes(shape=high_or_low_co2, color=included), size=3) + 
+  scale_color_manual(values=c("red", "blue")) +
+           #geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+  theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
+  #annotate("text", x = 2.25, y = 70, label = "r = -0.38", size=6) + 
+ggtitle("% CpG Methylation full genome ~ mitochondria") + 
+  xlab("Mitochindria CpG meth %") + ylab("Full Genome CpG % meth")
+
+ggplot(sample.info.mito, aes(x=perc_totalread_unique_mito, y=CpGs_Meth_mito)) + 
+  geom_point(aes(shape=high_or_low_co2, color=included), size=3) + 
+  scale_color_manual(values=c("red", "blue")) +
+           #geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+  theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
+  #annotate("text", x = 2.25, y = 70, label = "r = -0.38", size=6) + 
+ggtitle("mitochondria % CpG methylation ~ alignment rate") + 
+  xlab("Mitochindria alignment rate") + ylab("Mitochindria CpG meth %")
+
+ggplot(sample.info.mito, aes(x=included, y=CpGs_Meth_mito, color=included)) + 
+  geom_boxplot(outlier.shape = NA) + geom_jitter(width = 0.15, aes(shape=high_or_low_co2)) + 
+  theme_minimal() + scale_color_manual(values=c("red", "blue")) #+
+           #geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+  #theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
+  #annotate("text", x = 2.25, y = 70, label = "r = -0.38", size=6) + 
+#ggtitle("% CpG Methylation full genome ~ mitochondria") + 
+#  xlab("Mitochindria CpG meth %") + ylab("Full Genome CpG % meth")
+
+summary(sample.info.mito$CpGs_Meth_mito)
+```
+
+## BONEYARD 
 
 Divergent Bar plot of DMLs 
 
@@ -1334,80 +1411,3 @@ OTHER POSSIBLE ANALYSIS OPTIONS
 - randomize which samples are "Treatment" and run 10 permutations to see now many loci are DMLs then 
 - Try to pull SNPs from RNASeq data to identify pop structure 
 - Research cool software for integrating meth+rnaseq. AI options for integration? 
-
-### Alignment to mitochondrial DNA to estimate conversion rate 
-
-```{r}
-# Join sample info with bismark summary report 
-
-(sample.info.mito <- sample.info %>% 
-   dplyr::select(sample, tank, treatment, high_or_low_co2, sample_seq, developmental_stage, 
-                 dna_siolation_batch, perc_totalread_unique, CpGs_Meth, CHGs_Meth, CHHs_Meth) %>% 
-  
-  right_join(
-
-  # Read in bismark summary report
-    read_delim(file="../results/bismark/mito/bismark_summary_report.txt", delim="\t") %>% mutate(File = str_replace_all(File, '_R1_bismark_bt2_pe.bam', "")) %>%
-  clean_names() %>% 
-   separate(file, into = c("a", "b", "sample_seq"), remove = F, sep = "_") %>%
-   mutate(sample_prep=paste(a, b, sep = "-")) %>%
-    mutate(sample_seq=as.numeric(str_replace_all(sample_seq, "S", ""))) %>%
-   #dplyr::select(file, sample_prep, sample_seq, everything(), -a, -b) %>%
-  mutate(perc_totalread_unique_mito=unique_reads_remaining/total_reads, 
-         CpGs_Meth_mito=100*methylated_cp_gs/(methylated_cp_gs+unmethylated_cp_gs), 
-         CHGs_Meth_mito=100*methylated_chgs/(methylated_chgs+unmethylated_chgs), 
-         CHHs_Meth_mito=100*methylated_ch_hs/(methylated_ch_hs+unmethylated_ch_hs)) %>% 
-    dplyr::select(sample_prep, perc_totalread_unique_mito, CpGs_Meth_mito, CHGs_Meth_mito, CHHs_Meth_mito),
-
-  by = c("sample"="sample_prep")) %>%
-  mutate(included=case_when(
-    sample_seq== 1 ~ "yes",
-    sample_seq== 2 ~ "yes",
-    sample_seq== 3 ~ "yes",     
-    sample_seq== 4 ~ "yes",
-    sample_seq== 7 ~ "yes",
-    sample_seq== 12 ~ "yes",
-    sample_seq== 10 ~ "yes",
-    sample_seq== 11 ~ "yes",
-    sample_seq== 15 ~ "yes",
-    sample_seq== 17 ~ "yes",
-    sample_seq== 18 ~ "yes",
-    sample_seq== 20 ~ "yes",
-    TRUE ~ "no")))
-
-
-# **Good samples:** all have mean % methylation >= 70% and nloci meeting 10x > 3e5
-# control pCO2: 1, 2, 3, 4, 7, 12
-# high pCO2:    10, 11, 15, 17, 18, 20
-
-ggplot(sample.info.mito, aes(x=CpGs_Meth_mito, y=CpGs_Meth)) + 
-  geom_point(aes(shape=high_or_low_co2, color=included), size=3) + 
-  scale_color_manual(values=c("red", "blue")) +
-           #geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
-  theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
-  #annotate("text", x = 2.25, y = 70, label = "r = -0.38", size=6) + 
-ggtitle("% CpG Methylation full genome ~ mitochondria") + 
-  xlab("Mitochindria CpG meth %") + ylab("Full Genome CpG % meth")
-
-ggplot(sample.info.mito, aes(x=perc_totalread_unique_mito, y=CpGs_Meth_mito)) + 
-  geom_point(aes(shape=high_or_low_co2, color=included), size=3) + 
-  scale_color_manual(values=c("red", "blue")) +
-           #geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
-  theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
-  #annotate("text", x = 2.25, y = 70, label = "r = -0.38", size=6) + 
-ggtitle("mitochondria % CpG methylation ~ alignment rate") + 
-  xlab("Mitochindria alignment rate") + ylab("Mitochindria CpG meth %")
-
-summary(sample.info.mito$CpGs_Meth_mito)
-
-ggplot(sample.info.mito, aes(x=included, y=CpGs_Meth_mito, color=included)) + 
-  geom_boxplot(outlier.shape = NA) + geom_jitter(width = 0.15, aes(shape=high_or_low_co2)) + 
-  theme_minimal() + scale_color_manual(values=c("red", "blue")) #+
-           #geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
-  #theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
-  #annotate("text", x = 2.25, y = 70, label = "r = -0.38", size=6) + 
-#ggtitle("% CpG Methylation full genome ~ mitochondria") + 
-#  xlab("Mitochindria CpG meth %") + ylab("Full Genome CpG % meth")
-```
-
-
