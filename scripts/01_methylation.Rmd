@@ -1300,6 +1300,51 @@ ggplot(sample.info.mito, aes(x=included, y=CpGs_Meth_mito, color=included)) +
 summary(sample.info.mito$CpGs_Meth_mito)
 ```
 
+```{r}
+sample.info %>% dplyr::select(sample_seq, sample, high_or_low_co2, treatment, tank, developmental_stage, 
+                              dna_siolation_batch, perc_totalread_unique, CpGs_Meth, CHGs_Meth, CHHs_Meth) %>%
+  rename("perc_totalread_unique"="perc_totalread_unique_genome", 
+         "CpGs_Meth"="CpGs_Meth_genome", "CHGs_Meth"="CHGs_Meth_genome", "CHHs_Meth"="CHHs_Meth_genome") %>% 
+  mutate(perc_totalread_unique_genome= perc_totalread_unique_genome*100)  %>% 
+  right_join(
+
+  # Read in bismark summary report
+    read_delim(file="../results/bismark/mito/bismark_summary_report.txt", delim="\t") %>% mutate(File = str_replace_all(File, '_R1_bismark_bt2_pe.bam', "")) %>%
+  clean_names() %>% 
+   separate(file, into = c("a", "b", "sample_seq"), remove = F, sep = "_") %>%
+   mutate(sample_prep=paste(a, b, sep = "-")) %>%
+    mutate(sample_seq=as.numeric(str_replace_all(sample_seq, "S", ""))) %>%
+   #dplyr::select(file, sample_prep, sample_seq, everything(), -a, -b) %>%
+  mutate(perc_totalread_unique_mito=100*unique_reads_remaining/total_reads, 
+         CpGs_Meth_mito=100*methylated_cp_gs/(methylated_cp_gs+unmethylated_cp_gs), 
+         CHGs_Meth_mito=100*methylated_chgs/(methylated_chgs+unmethylated_chgs), 
+         CHHs_Meth_mito=100*methylated_ch_hs/(methylated_ch_hs+unmethylated_ch_hs)) %>% 
+    dplyr::select(sample_prep, perc_totalread_unique_mito, CpGs_Meth_mito, CHGs_Meth_mito, CHHs_Meth_mito),
+
+  by = c("sample"="sample_prep")) %>%
+  mutate_at(vars(perc_totalread_unique_genome, CpGs_Meth_genome, CHGs_Meth_genome, CHHs_Meth_genome,
+                 CpGs_Meth_mito, CHGs_Meth_mito, CHHs_Meth_mito), funs(round(., 1))) %>%
+  mutate(perc_totalread_unique_mito=round(perc_totalread_unique_mito, digits = 2)) %>%
+  mutate(included=case_when(
+    sample_seq== 1 ~ "yes",
+    sample_seq== 2 ~ "yes",
+    sample_seq== 3 ~ "yes",     
+    sample_seq== 4 ~ "yes",
+    sample_seq== 7 ~ "yes",
+    sample_seq== 12 ~ "yes",
+    sample_seq== 10 ~ "yes",
+    sample_seq== 11 ~ "yes",
+    sample_seq== 15 ~ "yes",
+    sample_seq== 17 ~ "yes",
+    sample_seq== 18 ~ "yes",
+    sample_seq== 20 ~ "yes",
+    TRUE ~ "no")) %>%
+  arrange(desc(included), desc(high_or_low_co2), sample_seq) %>% 
+  write.csv(file="../results/alignment-meth-summary.csv", row.names=FALSE) 
+
+```
+
+
 ## BONEYARD 
 
 Divergent Bar plot of DMLs 
