@@ -808,6 +808,9 @@ mean(perc.meth.summ[perc.meth.summ$sample %in% c("10","11","15", "17", "18", "20
 
 paste("No. of loci in filtered dataset:", nrow(perc.meth)) #146,761 loci 
 paste("No. of samples:", ncol(perc.meth)) #12 sampes 
+
+# % CpG Methylation by sample after filtering for 10x coverage (i.e. uniting)
+perc.meth.summ[,c("sample", "mean.perc")] %>% mutate(mean.perc=round(100*mean.perc, digits = 1)) %>% View()
 ```
 
 ```{r}
@@ -1299,6 +1302,8 @@ ggplot(sample.info.mito, aes(x=included, y=CpGs_Meth_mito, color=included)) +
 
 summary(sample.info.mito$CpGs_Meth_mito)
 ```
+
+Create table of alignment rate and methylation rates in full genome and mitochondrial contexts to assess sample integrity 
 
 ```{r}
 sample.info %>% dplyr::select(sample_seq, sample, high_or_low_co2, treatment, tank, developmental_stage, 
