@@ -1,0 +1,124 @@
+---
+title: "Non-target taxa"
+author: Steven Roberts
+date: "`r format(Sys.time(), '%d %B, %Y')`" 
+output: 
+  # github_document:
+  #   toc: true
+  #   toc_depth: 3
+  #   number_sections: true
+  #   html_preview: true
+  html_document:
+    theme: readable
+    highlight: zenburn
+    toc: true
+    toc_float: true
+    number_sections: true
+    code_folding: show
+    code_download: true
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(tidyverse)
+library(kableExtra)
+library(DESeq2)
+library(pheatmap)
+library(RColorBrewer)
+library(data.table)
+library(DT)
+library(formattable)
+library(Biostrings)
+library(spaa)
+knitr::opts_chunk$set(
+  echo = TRUE,         # Display code chunks
+  eval = FALSE,         # Evaluate code chunks
+  warning = FALSE,     # Hide warnings
+  message = FALSE,     # Hide messages
+  fig.width = 6,       # Set plot width in inches
+  fig.height = 4,      # Set plot height in inches
+  fig.align = "center" # Align plots to the center
+)
+```
+
+
+```{r, eval=TRUE}
+
+# specify the path to your files
+path <- "../results/MEGAN"
+
+# get all files in the directory
+files <- list.files(path, pattern = "*.tab", full.names = TRUE) 
+
+
+```
+
+
+# Fraction of reads Arthropoda
+
+
+```{r, eval=TRUE}
+df <- files %>%
+  map_df(~{
+    read_tsv(.x, col_names = FALSE) %>%
+    set_names(c("phylum", "count")) %>%
+    mutate(sample = str_remove(basename(.x), ".MEGAN.taxonName_to_count_summarized-phylum.tab"))  # remove the extension from the filename
+  })
+
+
+```
+```{r, eval=TRUE}
+datatable(df)
+
+```
+
+```{r, eval=TRUE}
+datatable(
+  df %>%
+ pivot_wider(names_from = phylum, values_from = count, values_fill = 0) %>%
+ mutate(total = rowSums(select(., 2:35), na.rm = TRUE)) %>%
+ mutate(fraction = Arthropoda/total) %>%
+ select("sample", "fraction", "Arthropoda", "Chordata", "Microsporidia", "Proteobacteria", "Bacteroidetes")
+)
+```
+```{r, eval=TRUE}
+df %>%
+ pivot_wider(names_from = phylum, values_from = count, values_fill = 0) %>%
+ mutate(total = rowSums(select(., 2:35), na.rm = TRUE)) %>%
+ mutate(fraction = Arthropoda/total) %>%
+ select("sample", "fraction", "Arthropoda", "Chordata", "Microsporidia", "Proteobacteria", "Bacteroidetes") %>%
+  ggplot(aes(x=fraction)) +
+  geom_histogram(bins = 50, fill="blue", color="black") +
+  labs(x="Percent", y="Frequency", title="Histogram of Arthr0poda Fraction of reads") +
+  theme_minimal()
+```
+
+
+
+
+```{r, eval=TRUE}
+df %>%
+  filter(phylum == c("Arthropoda", "Chordata", "Microsporidia", "Proteobacteria", "Bacteroidetes")) %>%
+  group_by(phylum, sample) %>%
+  summarise(total = mean(count, na.rm = TRUE)) %>%
+  ggplot(aes(x = phylum, y = total)) +
+  geom_col(position = "dodge") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(x = "Category", y = "Total Count")
+
+```
+
+```{r, eval=TRUE}
+df_wider <- df %>%
+ pivot_wider(names_from = phylum, values_from = count, values_fill = 0) %>%
+ select("sample", "Arthropoda", "Chordata", "Microsporidia", "Proteobacteria", "Bacteroidetes")
+
+```
+
+```{r, eval=TRUE}
+datatable(df_wider)
+```
+
+
+
+
