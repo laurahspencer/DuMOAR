@@ -444,6 +444,7 @@ NOTE: Hover over points to see the sample numbers
            ggtitle("PCA by Treatment (var-stabilizing transformed)\ntop 500 genes") +
     geom_point(size=2, aes(text=colnames(vsd.treatment))) +
       scale_color_manual(values=c("L"= "blue", "H"="red")) +
+    geom_label_repel(size=2.5, min.segment.length=0.15, aes(label=colnames(vsd.treatment))) +
       theme_minimal()+ stat_ellipse() #, tooltip = "text")
 
 #ggplotly(
