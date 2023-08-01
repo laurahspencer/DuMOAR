@@ -1,0 +1,760 @@
+---
+title: "DuMOAR RNA-Seq"
+author: "Laura Spencer"
+date: '2022-10-20'
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+      number_sections: true
+---
+
+### Load libraries and source scripts 
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+
+# source("../references/biostats.R")
+
+# Add all required libraries that are installed with install.packages() here
+list.of.packages <- c("RCurl", "tidyverse", "vegan", "pheatmap", "pastecs", "factoextra", "FactoMineR", "RColorBrewer", "tibble", "reshape2", "corrplot", "PerformanceAnalytics", "cowplot", "here", "janitor", "clipr", "googlesheets4", "ggrepel")
+# Add all libraries that are installed using BiocManager here
+bioconductor.packages <- c("DESeq2", "WGCNA")
+
+# Install BiocManager if needed
+if(!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+
+# Get names of all required packages that aren't installed
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[, "Package"])]
+new.bioc.packages <- bioconductor.packages[!(bioconductor.packages %in% installed.packages()[, "Package"])]
+# Install all new packages
+if(length(new.packages)) install.packages(new.packages)
+if(length(new.bioc.packages)) BiocManager::install(new.bioc.packages)
+
+# Load all required libraries
+all.packages <- c(list.of.packages, bioconductor.packages)
+lapply(all.packages, FUN = function(X) {
+  do.call("require", list(X))
+})
+
+```
+
+```{r, message=FALSE, warning=FALSE, results=FALSE}
+#### Load libraries and source scripts 
+
+source("../references/biostats.R")
+#source("../references/iLOO.R")
+`%!in%` = Negate(`%in%`)
+
+# Add all required libraries that are installed with install.packages() here
+list.of.packages <- c("RCurl", "tidyverse", "vegan", "pheatmap", "pastecs", "factoextra", "FactoMineR", "RColorBrewer", "tibble", "reshape2", "cowplot", "clipr", "janitor", "ggpubr", "forcats", "apeglm", "car", "vsn", "devtools", "grid", "gridGraphics", "Rfast", "dendextend", "RColorBrewer", "scales", "VennDiagram", "colorspace")
+
+# Add all libraries that are installed using BiocManager here
+bioconductor.packages <- c("DESeq2", "WGCNA")
+
+# # Install BiocManager if needed
+# if(!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+# 
+# # Get names of all required packages that aren't installed
+# new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[, "Package"])]
+# new.bioc.packages <- bioconductor.packages[!(bioconductor.packages %in% installed.packages()[, "Package"])]
+# # Install all new packages
+# if(length(new.packages)) install.packages(new.packages)
+# if(length(new.bioc.packages)) BiocManager::install(new.bioc.packages)
+
+# Load all required libraries
+all.packages <- c(list.of.packages, bioconductor.packages)
+lapply(all.packages, FUN = function(X) {
+  do.call("require", list(X))
+})
+
+# Github packages 
+#install_github("pmartinezarbizu/pairwiseAdonis/pairwiseAdonis")
+library(pairwiseAdonis)
+
+`%!in%` = Negate(`%in%`)
+```
+
+# Pre-processing gene counts  
+
+### Import counts
+
+```{r}
+counts <- data.frame(read.table("../results/STAR/all.ReadsPerGene.out.tab", header = T, stringsAsFactors = F, fill = FALSE)) %>%
+  column_to_rownames(var="Genes")
+```
+
+### Import sample info
+
+```{r}
+sample.info.rna <- read_sheet("https://docs.google.com/spreadsheets/d/1ym0XnYVts98tIUCn0kIaU6VuvqxzV7LoSx9RHwLdiIs/edit?usp=sharing", "data_071119collection") %>% 
+ clean_names() %>% dplyr::select(sample, tank, high_or_low_co2, developmental_stage) %>%
+  mutate(sample=gsub("\\-", "\\.", sample)) %>%
+  mutate_at(vars(tank, high_or_low_co2, developmental_stage), as.factor) %>%
+  filter(sample %in% colnames(counts))
+```
+### Summarize counts
+
+```{r}
+print(paste("Number of samples:", ncol(counts)))
+print(paste("Total number of genes in dataframe:", prettyNum(nrow(counts), big.mark = ","), sep=" "))
+print(paste("Average number of genes per sample:", prettyNum(mean(colSums(counts != 0)) %>% round(), big.mark = ","), sep=" "))
+print(paste("Total counts, all samples:", prettyNum(sum(colSums(counts)), big.mark = ","), sep=" "))
+
+#inspect total counts by sample
+# ggplotly(
+   ggplot(data.frame(colSums(counts)) %>% 
+            dplyr::rename(count.total = 1) %>% rownames_to_column(var="sample")) + 
+     geom_bar(aes(x=sample, y=count.total), stat = "identity") + ggtitle("Total count by sample") + 
+              theme(axis.text.x = element_text(angle = 90), axis.ticks.x = element_blank())#) 
+```
+
+### Assess MEGAN results
+
+Does % alignment match the megan % of reads assigned to arthropoda? 
+
+```{r}
+load(file = "../results/MEGAN/megan.df.plot")
+read.csv("../results/STAR/star-align-all-data.csv", header = T) %>% 
+  left_join(megan.df.plot, by = "sample") %>%
+  filter(phylum=="Arthropoda") %>% filter(!grepl("R2",sample.read)) %>%
+  ggplot(aes(x=uniquely.aligned, y=fraction, color=high_or_low_co2, label=sample)) +
+  geom_point() + theme_minimal() +
+  geom_label_repel(size=2.5, min.segment.length=0.15, aes(colour=high_or_low_co2)) +
+  scale_color_manual(values = c("red", "blue")) + 
+  theme(legend.position = "bottom", legend.title = element_blank()) +
+  xlab("% Uniquely Aligned to Dungeness Genome") + ylab("% reads assigned to Arthropoda")
+```
+
+### Optional filters
+
+#### OPTIONAL: Filter whole samples
+
+Remove whole samples from the data set and sample info here if needed
+
+```{r}
+# remove.list <- c("PCG194", "PCG137")
+# counts <- counts[ , -which(names(counts) %in% remove.list)]
+# sample.info.rna <- sample.info.rna[ -which(sample.info.rna$vial_label %in% remove.list), ]
+# 
+# # resave sample info object
+# save(sample.info.rna, file="../data/sample.info.rna")
+# 
+# nrow(sample.info.rna) == ncol(counts) #should = TRUE
+```
+
+#### OPTIONAL: Filter whole scaffolds
+
+This code provides the option to remove data that mapped to scaffolds 105+. This is possibly beneficial because I don't know whether or not those scaffolds are also included within scaffolds 1-104 (i.e. the chromosomes). 
+
+NOTE:  For exploration purposes I will NOT remove them, and will see if expressed data mapping to scaffolds 105+ have the exact same genes/counts as on chromosomes. 
+
+After preliminary examination of blast results (by looking at genes, lengths, and counts) it's difficult to tell whether the scaffolds 105+ are subsets of the chromosomes 1-104. For now I will retain scaffolds 105+. 
+
+
+```{r}
+# counts <- counts %>% separate(Chr, into = c("X", "Y", "scaffold"), sep = "_", remove = F) %>%
+#   mutate(scaffold=as.integer(scaffold)) %>% filter(scaffold<=104) %>% dplyr::select(-X, -Y, -scaffold)
+```
+
+#### Optional: filter genes that are outliers in outlier samples
+
+```{r}
+# counts <- counts[-which(rownames(counts) %in% outliers),]
+```
+
+#### Transpose dataframe
+
+In the counts.t dataframe each row = a sample (aka "objects"), and each column = genes (aka "variables") 
+
+```{r}
+#str(counts) #columns #1-#5 contain extraneous gene info (chr, start, end, strand, length). 
+counts.t <- as.data.frame(t(counts)) #transform data to have each sample a row, each column a gene
+```
+
+### Remove low-frequency genes 
+
+NOTE: Should i do this? DESeq2 throws out low-frequency genes anyway, BUT other folks do pre-filter. For example in https://doi.org/10.1186/s12864-017-4392-0 "Genes with mean count less than ten across all samples were removed."
+
+```{r}
+keep1 <- colMeans(counts.t, na.rm=TRUE) >= 10 #identify genes with mean count >= 10 across all samples (excluding NAs = 10)
+keep2 <- rowSums( counts >= 30 ) >= 0.1*24 #identify genes with counts>=30 across at minimum 10% of the samples
+keep <- unique(c(names(which(keep1 == T)), names(which(keep2 == T)))) # list of genes meeting one of the two above criteria
+counts.ts <- counts.t[,keep]
+#counts.ts <- counts.t #execute this line to keep ALL genes
+```
+#### Save counts file, and transformed counts file 
+
+```{r}
+save(counts, file = "../results/STAR/counts")
+save(counts.t, file = "../results/STAR/counts.t")
+save(counts.ts, file = "../results/STAR/counts.ts")
+```
+
+#### Annotate gene count matrix 
+
+```{r}
+# IMPORTANT NOTE: to use data for ALL genes, use object "counts.t". To remove low-frequency genes, use object "counts.ts" 
+
+# merge count data with sample key, reset row names as sample names, and arrange by treatment
+counts.tk <- merge(x=sample.info.rna, by.x="sample", y=counts.ts, by.y="row.names") %>% 
+  arrange(high_or_low_co2, tank)  %>% column_to_rownames(var="sample") %>% droplevels()
+
+head(counts.tk[1:8]) #check out results of merge/arrange
+```
+
+# Library summary stats
+
+```{r}
+print(paste("# genes before filtering:", ncol(counts.t)))
+print(paste("# genes remaining after pre-filtering:", ncol(counts.ts)))
+print(paste("# of genes dropped:", ncol(counts.t) - ncol(counts.ts), sep=" "))
+print(paste("% of fragments remaining after pre-filtering: ", signif(100*sum(counts.ts)/sum(counts.t), digits = 5), "%", sep=""))
+print(paste("Number of fragments dropped: ", signif(sum(counts.t)-sum(counts.ts), digits = 5)))
+print(paste("% of fragments dropped: ", signif(100*(sum(counts.t)-sum(counts.ts))/sum(counts.t), digits = 5), "%", sep=""))
+print(paste("Number of fragments remaining: ", signif(sum(counts.ts), digits = 5)))
+```
+
+#### Inspect read distribution before & after filtering
+
+```{r}
+# Plot distribution of unfiltered read counts across all samples 
+#ggplotly(
+ggplot(data = data.frame(rowMeans(counts)),
+       aes(x = rowMeans.counts.)) +
+  geom_histogram(fill = "grey") +
+  xlim(1, 250) +
+  theme_classic() +
+  labs(title = "Distribution of unfiltered reads") +
+  labs(y = "Density", x = "Raw read counts",
+  title = "Read count distribution: untransformed, unnormalized, unfiltered\n(execept to remove 0's)")#)
+```
+
+#### No. of fragments per sample? 
+
+```{r}
+data.frame(rowSums(counts.ts)) %>% 
+                  dplyr::rename(read.total = 1) %>% 
+                  rownames_to_column(var="sample") %>% #summary() 
+dplyr::summarise(mean=round(mean(read.total, na.rm=T)), 
+          sd=round(sd(read.total, na.rm=T)), 
+          se=round(sd/sqrt(length(sample))),
+          median=median(read.total), 
+          min=min(read.total), 
+          max=max(read.total)) %>% t() %>% as.data.frame() %>% 
+  dplyr::mutate(V1=prettyNum(V1, big.mark = ",")) %>% 
+  dplyr::rename("fragments.per.sample"="V1") #use this to average across all samples 
+```
+
+#### Did the no. of fragments per treatment differ? 
+
+```{r}
+fragments <- data.frame(rowSums(counts.ts)) %>% 
+                  dplyr::rename(read.total = 1) %>% 
+                  rownames_to_column(var="sample") %>%
+  left_join(sample.info.rna %>% dplyr::select(sample, high_or_low_co2, developmental_stage), by="sample")
+
+
+#ggplotly(
+ggplot(data = fragments) + 
+  geom_bar(aes(x=sample, y=read.total, fill=high_or_low_co2), stat = "identity") + 
+  ggtitle("Total # fragments by sample") + theme_minimal() + 
+  scale_fill_manual(values=c("L"= "blue", "H"="red")) +
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())#) 
+
+hist(log(fragments$read.total))
+shapiro.test(log(fragments$read.total))
+anova(lm(log(read.total) ~ high_or_low_co2, fragments))
+ggplot(fragments, aes(x=high_or_low_co2, y=read.total)) + geom_boxplot() + theme_minimal()
+```
+
+#### How many samples per treatment?
+
+```{r}
+fragments %>% group_by(high_or_low_co2) %>% tally()
+fragments %>% group_by(high_or_low_co2, developmental_stage) %>% tally()
+```
+
+#### How many genes total in the filtered count matrix?
+
+```{r}
+prettyNum(ncol(counts.ts),big.mark = ",")
+```
+
+#### What's the average no. of genes per sample?
+
+```{r}
+data.frame(rowSums(counts.ts != 0)) %>% 
+                  dplyr::rename(count.total = 1) %>% 
+                  rownames_to_column(var="sample") %>% 
+  summarise(mean=round(mean(count.total, na.rm=T)), 
+            sd=round(sd(count.total, na.rm=T)), 
+            se=round(sd/sqrt(length(sample))),
+            median=median(count.total, na.rm=T),
+            min=min(count.total, na.rm=T), 
+            max=max(count.total, na.rm=T)) %>% t() %>% as.data.frame() %>% 
+  mutate(V1=prettyNum(V1, big.mark = ",")) %>% 
+  dplyr::rename("genes.per.sample"="V1")
+```
+
+#### No. of genes/sample before & after filtering
+
+```{r}
+#ggplotly(
+ggplot(data = data.frame(rowSums(counts.t != 0, na.rm=TRUE)) %>% 
+                  dplyr::rename(count.total = 1) %>% 
+                  rownames_to_column(var="sample")) +
+           geom_bar(aes(x=sample, y=count.total), stat = "identity") + ggtitle("Total # genes by sample before filtering") + 
+             theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())#) 
+
+ggplot(data = data.frame(rowSums(counts.ts != 0, na.rm=TRUE)) %>% 
+                  dplyr::rename(count.total = 1) %>% 
+                  rownames_to_column(var="sample")) +
+           geom_bar(aes(x=sample, y=count.total), stat = "identity") + ggtitle("Total # genes by sample after filtering") + 
+             theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())#) 
+```
+# start DESeq2, unsupervised analyses
+
+#### Ensure correct sample order for DESeq2
+
+```{r}
+# NOTE: It is absolutely critical that the **columns of the count matrix** and the **rows of the column data (information about samples)** are in the same order. DESeq2 will not make guesses as to which column of the count matrix belongs to which row of the column data, these must be provided to DESeq2 already in consistent order.
+
+all(rownames(counts.tk) == counts.tk[-1:-3] %>% t() %>% colnames()) #check that rownames of untransformed matrix match column names of transformed matrix. Should print 'TRUE' 
+```
+
+#### Generate DESeq dataset
+
+```{r}
+dds.treatment <- DESeqDataSetFromMatrix(countData = counts.tk[-1:-3] %>% t(),
+                              colData = counts.tk[,"high_or_low_co2", drop=FALSE] ,
+                              design = ~ high_or_low_co2)
+```
+
+#### Transform data for visualization 
+
+```{r}
+vsd.treatment <- varianceStabilizingTransformation(dds.treatment, blind=FALSE)
+save(vsd.treatment, file = "../results/DESeq2/vsd.treatment")
+```
+
+### Heat map
+
+Uses top 10% most variable genes, VSD-transformed counts
+
+```{r}
+# calculate CV for each gene across all samples 
+most.variable <- assay(vsd.treatment) %>% as.data.frame() %>%
+  rownames_to_column(var = "gene") %>%
+  rowwise() %>% 
+  dplyr::mutate(
+     sd = sd(c_across(-gene)),
+     mean = mean(c_across(-gene)),
+     cv = sd/mean) %>%
+  #column_to_rownames("gene") %>%
+  arrange(desc(cv)) %>% 
+# subset top 10% of most variable genes 
+  head(n=round(0.1*nrow(assay(vsd.treatment)))) %>%
+  dplyr::select(gene) %>% unlist() %>% as.vector()
+
+length(most.variable)
+
+# Generate heat map / cluster those top 10% most variable genes
+cluster.most.variable <- pheatmap(t(assay(vsd.treatment))[,most.variable], 
+         Rowv=NA, Colv=NA, na.rm = TRUE, xlab = NA, scale="column",
+                     show_colnames =FALSE, cluster_cols = FALSE, cluster_rows = TRUE,
+         annotation_colors = list(high_or_low_co2=c(`L`= "blue", `H`="red")),
+         annotation_row=as.data.frame(colData(vsd.treatment)[,c("high_or_low_co2"), drop=FALSE]),
+         main = "gene counts - top 10% most variable\n(VSD-transformed)")
+```
+
+### Hierarchical clustering
+
+NOTE: this was generated by the pheatmap function in the previous code chunk
+
+```{r}
+# Just plot hierarchical cluster, color-code sample by treatment, or by tank number
+cluster.dendo <- as.dendrogram(cluster.most.variable$tree_row) 
+#plot(cluster.dendo) # bare bones dendogram
+#order.dendrogram(cluster.dendo) # to find out the order of the sample labels 
+
+# Create a dataframe ordered the same as the dendogram for annotation purposes 
+dendo.df <- sample.info.rna[match(cluster.most.variable$tree_row$labels, sample.info.rna$sample),c("sample", "high_or_low_co2", "tank")]
+all(dendo.df$sample == cluster.most.variable$tree_row$labels) # Should == TRUE
+
+# Create color coding vectors 
+colorCodes.treat <- c(`L`= "blue", `H`="red")
+colorCodes.tank <- colorRampPalette(brewer.pal(12, "Paired"))(length(levels(sample.info.rna$tank)))
+
+# # Color code sample names by treatment
+#labels_colors(cluster.dendo) <- colorCodes.treat[as.character(dendo.df$treatment[order.dendrogram(cluster.dendo)])]
+#plot(cluster.dendo, xlab="Sample (color=treatment)") # plot with sample names color coded by treatment 
+
+# Plot dendogram color-code by treatment, but labels are tank number
+labels(cluster.dendo) <- dendo.df$tank[order.dendrogram(cluster.dendo)]
+labels_colors(cluster.dendo) <- colorCodes.treat[as.character(dendo.df$high_or_low_co2[order.dendrogram(cluster.dendo)])]
+plot(cluster.dendo, xlab="Tank Number", cex.lab=0.9) # plot with sample names color coded by tank
+legend("topright", title = "Treatment", bty="n", legend =c("L", "H"), fill = c("blue","red"))
+
+
+# # Color code sample names by tank
+# labels_colors(cluster.dendo) <- colorCodes.tank[dendo.df$tank][order.dendrogram(cluster.dendo)]
+# plot(cluster.dendo, xlab="Sample (color=tank)") # plot with sample names color coded by tank
+
+# # A sub tree - looking at branches
+# par(cex = 1)
+# plot(cluster.dendo[[1]], horiz = TRUE)
+```
+
+```{r}
+# 
+# #### Save variance-stabilization normalized gene counts x sample matrix, annotated for later use 
+# 
+# ####**NOTE: Here forward I primarily work with the vsd.treatment object, so I can do pairwise treatment contrasts** 
+# 
+# counts.trans <- assay(vsd.treatment) %>% t() %>% as.matrix() %>% as.data.frame() %>% 
+#   rownames_to_column(var = "sample") %>% 
+#   left_join(sample.info.rna[,c("sample", "treatment", "tank", "temperature", "ph")], by = c("sample"="vial_label")) %>%
+#   column_to_rownames(var = "sample") %>% 
+#   dplyr::select(treatment, temperature, ph, tank, everything()) %>% 
+#   mutate(Treatment=factor(treatment, levels=c("3_low", "6_amb", "6_low", "10_amb", "10_low"))) %>%
+#   mutate(temperature=factor(temperature, levels=c("3", "6", "10"))) %>%
+#   mutate(ph=factor(ph, levels=c("amb", "low")))
+# save(counts.trans, file = "../results/star/counts.trans")
+```
+
+### PCA's
+
+```{r}
+# To view the the guts of the PlotPCA function in DESeq2, execute this code chunk. It reveals that, by default, it only uses the top 500 most influential genes to plot the PCA! 
+
+#getMethod("plotPCA","DESeqTransform")
+```
+
+#### PCAs using DESeq2
+
+NOTE: Hover over points to see the sample numbers
+
+```{r}
+# Generate PCA with points color coded by pH Treatment with various number of top genes to use for principal components, selected by highest row variance  
+
+#ggplotly(
+  plotPCA(vsd.treatment, intgroup="high_or_low_co2", ntop=500) +
+           ggtitle("PCA by Treatment (var-stabilizing transformed)\ntop 500 genes") +
+    geom_point(size=2, aes(text=colnames(vsd.treatment))) +
+      scale_color_manual(values=c("L"= "blue", "H"="red")) +
+      theme_minimal()+ stat_ellipse() #, tooltip = "text")
+
+#ggplotly(
+  plotPCA(vsd.treatment, intgroup="high_or_low_co2", ntop=nrow(assay(vsd.treatment))) + 
+           ggtitle("PCA by Treatment (var-stabilizing transformed)\nall genes") + 
+    geom_point(size=3, aes(text=colnames(vsd.treatment))) + 
+      scale_color_manual(values=c("L"= "blue", "H"="red")) +
+    theme_minimal()+ stat_ellipse() #, tooltip = "text")
+```
+
+#### PCAs using prcomp
+
+This enables screeplot to ID significant PCs, calculates variance, etc. 
+
+```{r, warning=F, message=F}
+#pca.princomp <- prcomp(cov(assay(vsd.pH)), scale=F) #scale=F for variance-covariance matrix
+pca.princomp <- prcomp(t(assay(vsd.treatment))) # using the same code that's under the hood of PlotPCA but using all genes 
+screeplot(pca.princomp, bstick=TRUE) #looks like PC 1-2 are significant 
+pca.eigenval(pca.princomp) #The Proporation of Variance = %variance 
+pc.percent <- pca.eigenval(pca.princomp)[2,1:6]*100
+pc.percent[1:2] %>% sum() #total variance explained by the first 2 PCs
+```
+
+```{r}
+#### Generate dataframe with prcomp results 
+tab.expr <- data.frame(sample.id = colnames(assay(vsd.treatment)),
+    EV1.all = pca.princomp$x[,1],    # the first eigenvector
+    EV2.all = pca.princomp$x[,2],    # the second eigenvector
+    stringsAsFactors = FALSE)
+#shapiro.test(pca.princomp$x) #sample size too large for shapiro test which is weird 
+#hist(pca.princomp$x) #normal? hard to say, maybe
+tab.expr.annot <- left_join(tab.expr, sample.info.rna, by=c("sample.id"="sample")) %>% droplevels()
+```
+
+### Global Expression PCA 1x2
+
+```{r}
+pdf(file="../results/DESeq2/Figure1_PCA.pdf", height = 5.25, width = 7.5)
+ggscatter(tab.expr.annot,
+          x="EV1.all", y="EV2.all", col="high_or_low_co2", shape="high_or_low_co2", size=3.5, alpha=0.85, 
+          ellipse = T, star.plot = T) +
+  theme_minimal() + ggtitle("Global gene expression PC1xPC2") + 
+  xlab(paste("PC1 (", round(pc.percent[1], digits = 1), "%)", sep="")) + 
+  ylab(paste("PC2 (", round(pc.percent[2], digits = 1), "%)", sep="")) + 
+  theme(legend.position = "right", legend.text=element_text(size=8), legend.title=element_text(size=9)) + 
+  scale_color_manual(name="Treatment", 
+                     values=c("L"="blue",
+                              "H"="red"),
+                     labels=c("L"="Control",
+                              "H"="High pCO2")) +
+  scale_shape_manual(guide="none", values=c("L"=19, "H"=17)) +
+  guides(fill="none", colour = guide_legend(override.aes = list(size=3.5, linetype="blank", shape=c(19, 17))))
+dev.off()
+```
+
+#### PCA using developmental stage and tank
+
+```{r}
+ggscatter(tab.expr.annot,
+          x="EV1.all", y="EV2.all", col="high_or_low_co2", shape="developmental_stage", size=3.5, alpha=0.85, 
+          ellipse = F, star.plot = F) +
+  theme_minimal() + ggtitle("Global gene expression PC1xPC2") + 
+  scale_color_manual(name="Treatment", 
+                     values=c("L"="blue",
+                              "H"="red"),
+                     labels=c("L"="Control",
+                              "H"="High pCO2")) + 
+  xlab(paste("PC1 (", round(pc.percent[1], digits = 1), "%)", sep="")) + 
+  ylab(paste("PC2 (", round(pc.percent[2], digits = 1), "%)", sep="")) + 
+  theme(legend.position = "right", legend.text=element_text(size=8), legend.title=element_text(size=9)) #+ 
+  # scale_shape_manual(guide="none", values=c("L"=19, "H"=17)) + 
+  # guides(colour = guide_legend(override.aes = list(size=3.5, linetype="blank", shape=c(19, 17))))
+
+ggscatter(tab.expr.annot,
+          x="EV1.all", y="EV2.all", col="high_or_low_co2", shape="tank", size=3.5, alpha=0.85, 
+          ellipse = F, star.plot = F) +
+  theme_minimal() + ggtitle("Global gene expression PC1xPC2") + 
+  scale_color_manual(name="Treatment", 
+                     values=c("L"="blue",
+                              "H"="red"),
+                     labels=c("L"="Control",
+                              "H"="High pCO2")) + 
+  xlab(paste("PC1 (", round(pc.percent[1], digits = 1), "%)", sep="")) + 
+  ylab(paste("PC2 (", round(pc.percent[2], digits = 1), "%)", sep="")) + 
+  theme(legend.position = "right", legend.text=element_text(size=8), legend.title=element_text(size=9)) #+ 
+```
+
+#### Correlation plots, PC scores (from all genes) ~ temperature
+
+```{r}
+ggplot() + 
+  geom_jitter(data= tab.expr.annot, width = 0.5, size=2.5,
+              aes(x=as.numeric((high_or_low_co2)), y=EV1.all, color=high_or_low_co2)) + 
+  theme_minimal() + xlab("Treatment") + ylab(paste("PC1 (", round(pc.percent[1], digits = 1), "%)", sep="")) + 
+  scale_color_manual(name="Treatment", values=c("L"="blue","H"="red"), labels=c("L"="Control","H"="High pCO2")) + 
+  geom_point(data=tab.expr.annot %>% group_by(high_or_low_co2) %>% dplyr::summarise(stat = mean(EV1.all)), 
+      aes(x=as.numeric((high_or_low_co2)), y=stat, color=high_or_low_co2), size = 6) +
+  guides(colour = guide_legend(override.aes = list(size=4, linetype="blank"), order=1),
+         shape = guide_legend(override.aes = list(size=4, linetype="blank")))
+
+ggplot() + 
+  geom_jitter(data= tab.expr.annot, width = 0.5, size=2.5,
+              aes(x=as.numeric((high_or_low_co2)), y=EV2.all, color=high_or_low_co2)) + 
+  theme_minimal() + xlab("Treatment") + ylab(paste("PC2 (", round(pc.percent[2], digits = 1), "%)", sep="")) + 
+  scale_color_manual(name="Treatment", values=c("L"="blue","H"="red"), labels=c("L"="Control","H"="High pCO2")) + 
+  geom_point(data=tab.expr.annot %>% group_by(high_or_low_co2) %>% dplyr::summarise(stat = mean(EV1.all)), 
+      aes(x=as.numeric((high_or_low_co2)), y=stat, color=high_or_low_co2), size = 6) +
+  guides(colour = guide_legend(override.aes = list(size=4, linetype="blank"), order=1),
+         shape = guide_legend(override.aes = list(size=4, linetype="blank")))
+```
+
+### PCA using 10% most variable genes 
+
+```{r}
+pca.princomp.var <- prcomp(t(assay(vsd.treatment)[most.variable,])) # using the same code that's under the hood of PlotPCA 
+pca.eigenval(pca.princomp.var) #The Proporation of Variance = %variance 
+pc.percent.var <- pca.eigenval(pca.princomp.var)[2,1:5]*100
+pc.percent.var[1:2] %>% sum()
+screeplot(pca.princomp.var, bstick=TRUE) #looks like PC 1-3 are significant 
+
+tab.expr.var <- data.frame(sample.id = colnames(assay(vsd.treatment[most.variable,])),
+    EV1.all = pca.princomp.var$x[,1],    # the first eigenvector
+    EV2.all = pca.princomp.var$x[,2],    # the second eigenvector
+    stringsAsFactors = FALSE)
+#shapiro.test(pca.princomp$x) #sample size too large for shapiro test which is weird 
+#hist(pca.princomp$x) #normal? hard to say, maybe
+tab.expr.annot.var <- left_join(tab.expr.var, sample.info.rna, by=c("sample.id"="sample")) %>% droplevels()
+
+# GGSCATTER with ellipses and stars - PC1 PC2
+ggscatter(tab.expr.annot.var, group="high_or_low_co2",
+          x="EV1.all", y="EV2.all", col="high_or_low_co2", size=3.5, alpha=0.85, 
+          ellipse = TRUE, star.plot = TRUE) +
+  theme_minimal() + ggtitle("Gene Expression PC1xPC2\n10% most variable genes") + 
+  xlab(paste("PC1 (", round(pc.percent.var[1], digits = 1), "%)", sep="")) + 
+  ylab(paste("PC2 (", round(pc.percent.var[2], digits = 1), "%)", sep="")) + 
+  labs(color="OA Treatment") + 
+  theme(legend.position = "right") + 
+  scale_color_manual(name="Treatment", values=c("L"= "blue", "H"="red")) +
+  guides(fill="none", colour = guide_legend(override.aes = list(size=3.5, linetype="blank"), order=1))
+```
+
+```{r}
+ggplot() + 
+  geom_jitter(data= tab.expr.annot.var, width = 0.5, size=2.5,
+              aes(x=as.numeric(high_or_low_co2), y=EV1.all, color=high_or_low_co2)) + 
+  theme_minimal() + xlab("Treatment") + ylab("PC1 score") + 
+  scale_color_manual(name="Treatment", values=c("L"= "blue", "H"="red")) +
+  geom_point(data=tab.expr.annot.var %>% group_by(high_or_low_co2) %>% dplyr::summarise(stat = mean(EV1.all)), 
+      aes(x=as.numeric(high_or_low_co2), y=stat, color=high_or_low_co2), size = 6) +
+  guides(colour = guide_legend(override.aes = list(size=4, linetype="blank"), order=1),
+         shape = guide_legend(override.aes = list(size=4, linetype="blank")))
+
+ggplot() + 
+  geom_jitter(data= tab.expr.annot.var, width = 0.5, size=2.5,
+              aes(x=as.numeric(high_or_low_co2), y=EV2.all, color=high_or_low_co2)) + 
+  theme_minimal() + xlab("Treatment") + ylab("PC2 score") + 
+  scale_color_manual(name="Treatment", values=c("L"= "blue", "H"="red")) +
+  geom_point(data=tab.expr.annot.var %>% group_by(high_or_low_co2) %>% dplyr::summarise(stat = mean(EV1.all)), 
+      aes(x=as.numeric(high_or_low_co2), y=stat, color=high_or_low_co2), size = 6) +
+  guides(colour = guide_legend(override.aes = list(size=4, linetype="blank"), order=1),
+         shape = guide_legend(override.aes = list(size=4, linetype="blank")))
+```
+
+## perMANOVA - multivariate analysis of variance
+
+```{r}
+# Effect of treatment
+vsd.t <- t(assay(vsd.treatment)) %>% as.data.frame()
+perm <- adonis(vsd.t ~ high_or_low_co2, data=sample.info.rna %>% remove_rownames() %>% column_to_rownames("sample"), permutations = 1000, method="bray")
+perm$aov.tab #yes effect of treatment on multivariate space 
+```
+
+```{r}
+#### How many unique genes were measured per treatment. This takes the mean of each gene by group, and counts up those that have mean >10. 
+
+#Warning: this takes forever 
+# # Counts before filtering 
+# sample.info.rna %>% select(Sample, Treatment) %>% left_join(counts.t %>% rownames_to_column("Sample")) %>% 
+#   group_by(Treatment) %>% summarise_if(is.numeric, "mean") %>% mutate(genes=rowSums(select_if(., is.numeric)>10)) %>% select(Treatment, genes)
+
+# # Counts after filtering
+# sample.info.rna %>% select(Sample, Treatment) %>% left_join(counts.tk %>% rownames_to_column("Sample")) %>% 
+#   select(-Sample, -Tank, -Treatment_Tank) %>% group_by(Treatment) %>% summarise_all("mean") %>% mutate(genes=rowSums(is.numeric(.)>10)) %>% select(Treatment, genes)
+```
+
+# Differential Expression Analysis
+
+_This is the core DESeq2 analysis!_ 
+
+```{r, message=F, warning=F, include=F}
+##### Run the function `DESeq` to assess differential expression 
+# NOTE, could consider including 'minReplicatesForReplace=Inf' to keep DESeq2 from replacing outlier values with trimmed means. 
+## The default is for this to happen when there are more than 7 replicates. 
+
+dds.DESeq.treatment <- DESeq(dds.treatment)
+#dds.DESeq.tank <- DESeq(dds.tank)
+```
+
+```{r}
+resultsNames(dds.DESeq.treatment)
+print("Comparison: Low pCO2 (control) vs. High pCO2 (OA treatment(")
+summary(res.treatment <- results(dds.DESeq.treatment, alpha=0.05))
+paste("No. of genes differentially expressed (padj<0.05) by OA treatment:",  sum(res.treatment$padj < 0.05, na.rm=TRUE))
+save(res.treatment, file = "../results/DESeq2/res.treatment")
+```
+
+#### Total number of genes analyzed 
+
+```{r}
+nrow(res.treatment)
+```
+
+```{r}
+#### Subset the DESeq results for only those statistically sign. ones
+# Could also filter to only include those with abs(L2FC)>0.5, but that might filter out interesting genes - 
+diffex.treatment <- subset(res.treatment, padj < 0.05) # & abs(log2FoldChange)>0.5
+#diffex.treatment %>% as.data.frame() %>% 
+  #filter(log2FoldChange > 0)
+  #filter(log2FoldChange < 0)
+```
+
+# Enrichment Analysis
+
+#### Load genesas results 
+
+```{r}
+gensas.genes <- read_delim(file = "../results/GenSAS/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.genes.gff3", delim = "\t", skip = 5, 
+                           col_names = c("seqname", "source", "feature", "start", "end", "score", "strand", "frame", "attribute")) %>%
+  separate(attribute, sep = ";", remove=F, into = c("ID","Name","Parent")) %>%
+  mutate_at(vars(start, end, score), as.numeric) %>%
+  mutate_at(vars(feature), as.factor) %>%
+  
+#  group_by(SeqID, Start, End) %>% dplyr::slice(which.min(evalue))  %>% # where multiple blast hits for same gene, select one with minimum e-value
+    mutate(ID=gsub("ID\\=", "", ID),
+           Name=gsub("Name\\=", "", Name),
+           Parent=gsub("Parent\\=", "", Parent)) %>%
+  clean_names() %>%
+  filter(feature=="gene")
+
+gensas.blast <- read_delim(file = "../results/GenSAS/Metacarcinus-magister-v1.0.a1.640639c029cb6-blast_functional.tab", delim = "\t", skip = 12, col_names = T) %>%
+  clean_names() %>%
+  mutate(name=gsub("\\.m01", "", name)) %>%
+  left_join(gensas.genes %>% dplyr::select(id, name), by="name") 
+```
+
+#### Save lists of DEGs for DAVID multi-list file upload
+
+```{r}
+DEGs.4David <- list(
+  
+  "Downregulated" = 
+    gensas.blast %>% filter(e_value<1e-10) %>%
+    filter(id %in% rownames(
+    diffex.treatment %>% as.data.frame() %>%
+      filter(dplyr::select(., contains("log2FoldChange"))>0.5))) %>%
+    dplyr::select(accession) %>%  na.omit() %>% unlist() %>% as.vector(),
+  
+  "Upregulated" = 
+    gensas.blast %>% filter(e_value<1e-10) %>%
+    filter(id %in% 
+    rownames(diffex.treatment %>% as.data.frame() %>%
+      filter(dplyr::select(., contains("log2FoldChange"))<(-0.5)))) %>%
+    dplyr::select(accession) %>%  na.omit() %>% unlist() %>% as.vector(),
+
+  "All_DEGs" = 
+    gensas.blast %>% filter(e_value<1e-10) %>%
+    filter(id %in% 
+    rownames(diffex.treatment)) %>%
+    dplyr::select(accession) %>%  na.omit() %>% unlist() %>% as.vector(),
+  
+  "All_genes" = 
+    gensas.blast %>% filter(e_value<1e-10) %>%
+    filter(id %in% 
+    rownames(res.treatment)) %>%
+    dplyr::select(accession) %>%  na.omit() %>% unlist() %>% as.vector()
+    ) 
+
+# Write tab-delimited file with each column containing Uniprot IDs for each set of DEGs 
+write_delim(x = plyr::ldply(DEGs.4David, rbind) %>% t() %>% as.data.frame(), delim = "\t", col_names = F, na="", 
+            file = "../results/DESeq2/DEGs-4David.tab")
+            
+# BACKGROUND - all genes submitted to DESeq2 analysis 
+gensas.blast %>% filter(e_value<1e-10) %>%
+    filter(id %in% 
+    rownames(res.treatment)) %>%
+    dplyr::select(accession) %>%  na.omit() %>% unlist() %>% as.vector() %>% 
+  write_clip(allow_non_interactive = TRUE)
+```
+
+# Plot all DEGs 
+
+```{r}
+rownames(diffex.treatment)
+  
+for (i in 1:nrow(diffex.treatment)) {
+a <-  plotCounts(dds.DESeq.treatment, gene=rownames(diffex.treatment)[i], 
+                 intgroup="high_or_low_co2", replaced = TRUE, returnData = TRUE) %>%
+  rownames_to_column("sample")
+
+print(
+  ggplot(a,
+       aes(x=high_or_low_co2, y=count, color=high_or_low_co2, label=sample)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_point(aes(shape=high_or_low_co2), size=2.5, position=position_jitter(w = 0.15,h = 0)) +
+    #geom_text(size=3.5, position=position_jitter(w = 0.15,h = 0)) +
+    theme_bw() +
+    ggtitle(str_wrap(rownames(diffex.treatment)[i])) +
+    theme(axis.title.x = element_blank(), plot.title = element_text(hjust = 0.5, size=10), legend.position = "none") +
+  scale_color_manual(name="Treatment", values=c("L"= "blue", "H"="red"), 
+                     labels=c("L"="Control","H"="High pCO2")))
+}
+```
+
+

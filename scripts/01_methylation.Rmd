@@ -138,7 +138,7 @@ sample.info <- read_sheet("https://docs.google.com/spreadsheets/d/1ym0XnYVts98tI
 
   by = c("sample"="sample_prep")) %>%
 
-# add mbd librar prep stats
+# add mbd library prep stats
   left_join(
   
   read_sheet("https://docs.google.com/spreadsheets/d/1ym0XnYVts98tIUCn0kIaU6VuvqxzV7LoSx9RHwLdiIs/edit?usp=sharing", "MBD_calcs") %>% 
@@ -205,18 +205,18 @@ chart.Correlation(sample.info %>%
 
 # Weak correlation with MBD library fragment size, but not convincing
 ggplot(sample.info, aes(x=library_bioanlyzer_mean_fragment_size_bp, y=CpGs_Meth)) +
-  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) +
+  geom_point(aes(label=sample, color=high_or_low_co2), size=3) +
   scale_color_manual(values=c("red", "blue")) +
-           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) +
+           geom_text(aes(label=sample, color=high_or_low_co2), vjust = -0.7) +
   theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
     annotate("text", x = 500, y = 17, label = "r = 0.42", size=6) + 
   ggtitle("% CpG Methylation ~ library_bioanlyzer_mean_fragment_size_bp") 
 
 # Low CpG methylation is associated with high CHH methylation 
 ggplot(sample.info, aes(x=CHHs_Meth, y=CpGs_Meth)) +
-  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) +
+  geom_point(aes(label=sample, color=high_or_low_co2), size=3) +
   scale_color_manual(values=c("red", "blue")) +
-           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) +
+           geom_text(aes(label=sample, color=high_or_low_co2), vjust = -0.7) +
   theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
     annotate("text", x = 33, y = 70, label = "r = -0.59", size=6) + 
   ggtitle("% CpG Methylation ~ CHHs_Meth") 
@@ -236,9 +236,9 @@ Correlations between CpGs_Meth and the following:
 
 ```{r, warning=FALSE,message=FALSE}
 ggplot(sample.info, aes(x=a260_280, y=CpGs_Meth)) + 
-  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  geom_point(aes(label=sample, color=high_or_low_co2), size=3) + 
   scale_color_manual(values=c("red", "blue")) +
-           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+           geom_text(aes(label=sample, color=high_or_low_co2), vjust = -0.7) + 
   theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
   annotate("text", x = 1.5, y = 75, label = "r = 0.52", size=6) + 
 ggtitle("% CpG Methylation ~ a260_280")
@@ -246,9 +246,9 @@ ggtitle("% CpG Methylation ~ a260_280")
 
 ```{r, warning=FALSE,message=FALSE}
 ggplot(sample.info, aes(x=mean_mw_highest_peak, y=CpGs_Meth)) + 
-  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  geom_point(aes(label=sample, color=high_or_low_co2), size=3) + 
   scale_color_manual(values=c("red", "blue")) +
-           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+           geom_text(aes(label=sample, color=high_or_low_co2), vjust = -0.7) + 
   theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
   annotate("text", x = 10000, y = 100, label = "r = 0.51", size=6) + 
 ggtitle("% CpG Methylation ~ Mean MW (highest peak)")
@@ -256,18 +256,18 @@ ggtitle("% CpG Methylation ~ Mean MW (highest peak)")
 
 ```{r, warning=FALSE,message=FALSE}
 ggplot(sample.info, aes(x=aligned_reads, y=CpGs_Meth)) + 
-  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  geom_point(aes(label=sample, color=high_or_low_co2), size=3) + 
   scale_color_manual(values=c("red", "blue")) +
-           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+           geom_text(aes(label=sample, color=high_or_low_co2), vjust = -0.7) + 
   theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
   annotate("text", x = 6e6, y = 85, label = "r = 0.66", size=6) + 
 ggtitle("% CpG Methylation ~ # of aligned reads")
 ```
 ```{r, warning=FALSE,message=FALSE}
 ggplot(sample.info, aes(x=unaligned_reads, y=CpGs_Meth)) + 
-  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  geom_point(aes(label=sample, color=high_or_low_co2), size=3) + 
   scale_color_manual(values=c("red", "blue")) +
-           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+           geom_text(aes(label=sample, color=high_or_low_co2), vjust = -0.7) + 
   theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
   annotate("text", x = 1e7, y = 85, label = "r = -0.77", size=6) + 
 ggtitle("% CpG Methylation ~ # unaligned reads")
@@ -275,18 +275,18 @@ ggtitle("% CpG Methylation ~ # unaligned reads")
 
 ```{r, warning=FALSE,message=FALSE}
 ggplot(sample.info, aes(x=ambiguously_aligned_reads, y=CpGs_Meth)) + 
-  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  geom_point(aes(label=sample, color=high_or_low_co2), size=3) + 
   scale_color_manual(values=c("red", "blue")) +
-           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+           geom_text(aes(label=sample, color=high_or_low_co2), vjust = -0.7) + 
   theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
   annotate("text", x = 5e6, y = 85, label = "r = -0.60", size=6) + 
 ggtitle("% CpG Methylation ~ # ambiguously aligned reads")
 ```
 ```{r, warning=FALSE,message=FALSE}
 ggplot(sample.info, aes(x=no_genomic_sequence, y=CpGs_Meth)) + 
-  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  geom_point(aes(label=sample, color=high_or_low_co2), size=3) + 
   scale_color_manual(values=c("red", "blue")) +
-           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+           geom_text(aes(label=sample, color=high_or_low_co2), vjust = -0.7) + 
   theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
   #annotate("text", x = 285, y = 75, label = "r = -0.93", size=6) + 
 ggtitle("% CpG Methylation ~ # unaligned- no genomic sequence")
@@ -298,9 +298,9 @@ No. of reads not aligning due to no genomic sequence corrlates very well with % 
 
 ```{r, warning=FALSE,message=FALSE}
 ggplot(sample.info, aes(x=unique_reads_remaining, y=CpGs_Meth)) + 
-  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  geom_point(aes(label=sample, color=high_or_low_co2), size=3) + 
   scale_color_manual(values=c("red", "blue")) +
-           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+           geom_text(aes(label=sample, color=high_or_low_co2), vjust = -0.7) + 
   theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
   annotate("text", x = 3.5e6, y = 95, label = "r = 0.73", size=6) + 
 ggtitle("% CpG Methylation ~ # unique aligned reads")
@@ -308,18 +308,18 @@ ggtitle("% CpG Methylation ~ # unique aligned reads")
 
 ```{r, warning=FALSE,message=FALSE}
 ggplot(sample.info, aes(x=total_cs, y=CpGs_Meth)) + 
-  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  geom_point(aes(label=sample, color=high_or_low_co2), size=3) + 
   scale_color_manual(values=c("red", "blue")) +
-           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+           geom_text(aes(label=sample, color=high_or_low_co2), vjust = -0.7) + 
   theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
   annotate("text", x = 6e7, y = 90, label = "r = 0.72", size=6) + 
 ggtitle("% CpG Methylation ~ total # Cs")
 ```
 ```{r, warning=FALSE,message=FALSE}
 ggplot(sample.info, aes(x=perc_totalread_unique, y=CpGs_Meth)) + 
-  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  geom_point(aes(label=sample, color=high_or_low_co2), size=3) + 
   scale_color_manual(values=c("red", "blue")) +
-           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+           geom_text(aes(label=sample, color=high_or_low_co2), vjust = -0.7) + 
   theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
   annotate("text", x = .15, y = 85, label = "r = 0.82", size=6) + 
 ggtitle("% CpG Methylation ~ % total reads uniquely aligned")
@@ -327,9 +327,9 @@ ggtitle("% CpG Methylation ~ % total reads uniquely aligned")
 
 ```{r, warning=FALSE,message=FALSE}
 ggplot(sample.info, aes(x=CHGs_Meth, y=CpGs_Meth)) + 
-  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  geom_point(aes(label=sample, color=high_or_low_co2), size=3) + 
   scale_color_manual(values=c("red", "blue")) +
-           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+           geom_text(aes(label=sample, color=high_or_low_co2), vjust = -0.7) + 
   theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
   annotate("text", x = 2.25, y = 70, label = "r = -0.38", size=6) + 
 ggtitle("% CpG Methylation ~ % CHG Methylation")
@@ -337,9 +337,9 @@ ggtitle("% CpG Methylation ~ % CHG Methylation")
 
 ```{r, warning=FALSE,message=FALSE}
 ggplot(sample.info, aes(x=CHHs_Meth, y=CpGs_Meth)) + 
-  geom_point(aes(label=sample_seq, color=high_or_low_co2), size=3) + 
+  geom_point(aes(label=sample, color=high_or_low_co2), size=3) + 
   scale_color_manual(values=c("red", "blue")) +
-           geom_text(aes(label=sample_seq, color=high_or_low_co2), vjust = -0.7) + 
+           geom_text(aes(label=sample, color=high_or_low_co2), vjust = -0.7) + 
   theme_minimal() + geom_smooth(method = "lm", se=T, color="black", linetype="dotted", fill="gray80") +
   annotate("text", x = 30, y = 75, label = "r = -0.59", size=6) + 
 ggtitle("% CpG Methylation ~ % CHH Methylation")
@@ -483,11 +483,12 @@ save(meth_unite_reshaped, file = "../results/methylkit/meth_unite_reshaped")
 meth_unite_reshaped %>% 
   group_by(sample) %>%
   summarize(mean = mean(percMeth), nloci = n()) %>%
-  left_join(sample.info[c("treatment", "sample_seq", "high_or_low_co2")], by=c("sample"="sample_seq")) %>%
-  ggplot(aes(x=nloci, y=mean, label=sample)) + geom_point(aes(colour=high_or_low_co2)) + 
-  geom_label_repel(min.segment.length=0.25,aes(colour=high_or_low_co2)) + theme_minimal() +
+  left_join(sample.info[c("treatment", "sample", "sample_seq", "high_or_low_co2")] %>% rename("sample"="sample_prep"), by=c("sample"="sample_seq")) %>%
+  ggplot(aes(x=nloci, y=mean, label=sample_prep)) + geom_point(aes(colour=high_or_low_co2)) + 
+  geom_label_repel(label.size=0.05, min.segment.length=0.25,aes(colour=high_or_low_co2)) + theme_minimal() +
   ggtitle("% methylation ~ # loci, no coverage minimum") +
   scale_color_manual(values = c("red", "blue")) + 
+  theme(legend.position = "bottom") +
   geom_smooth(method = "loess", se=T, color="black", linetype="dotted", fill="gray80")
 ```
 
@@ -498,12 +499,14 @@ meth_unite_reshaped %>%
   group_by(sample) %>%
   filter(coverage>=5) %>%
   summarize(mean = mean(percMeth), nloci = n()) %>%
-  left_join(sample.info[c("treatment", "sample_seq", "high_or_low_co2")], by=c("sample"="sample_seq")) %>%
-  ggplot(aes(x=nloci
-             , y=mean, label=sample)) + geom_point(aes(colour=high_or_low_co2)) + 
-  geom_label_repel(min.segment.length=0.25,aes(colour=high_or_low_co2)) + theme_minimal() +
+  left_join(sample.info[c("treatment", "sample", "sample_seq", "high_or_low_co2")] %>% rename("sample"="sample_prep"), 
+            by=c("sample"="sample_seq")) %>%
+  ggplot(aes(x=nloci, y=mean, label=sample_prep)) + 
+  geom_point(aes(colour=high_or_low_co2)) + 
+  geom_label_repel(label.size=0.05, min.segment.length=0.15,aes(colour=high_or_low_co2)) + theme_minimal() +
   ggtitle("% methylation ~ # loci, 5x coverage minimum") +
   scale_color_manual(values = c("red", "blue")) + 
+  theme(legend.position = "bottom") +
   geom_smooth(method = "loess", se=T, color="black", linetype="dotted", fill="gray80")
 ```
 
@@ -514,9 +517,11 @@ meth_unite_reshaped %>%
   group_by(sample) %>%
   filter(coverage>=10) %>%
   summarize(mean = mean(percMeth), nloci = n()) %>% 
-  left_join(sample.info[c("treatment", "sample_seq", "high_or_low_co2")], by=c("sample"="sample_seq")) %>%
-  ggplot(aes(x=nloci, y=mean, label=sample)) + geom_point(aes(colour=high_or_low_co2)) + 
-  geom_label_repel(label.size=0.1, min.segment.length = 0.5, aes(colour=high_or_low_co2)) + theme_minimal() +
+  left_join(sample.info[c("treatment", "sample", "sample_seq", "high_or_low_co2")] %>% rename("sample"="sample_prep"), 
+            by=c("sample"="sample_seq")) %>%
+  ggplot(aes(x=nloci, y=mean, label=sample_prep)) + 
+  geom_point(aes(colour=high_or_low_co2)) + 
+  geom_label_repel(label.size=0.05, min.segment.length=0.15,aes(colour=high_or_low_co2)) + theme_minimal() +
   ggtitle("% methylation ~ # loci, 10x coverage minimum") + xlab("# Loci") + ylab("Mean % CpG Methylation") +
   scale_color_manual(values = c("red", "blue")) + 
   geom_smooth(method = "loess", se=T, color="black", linetype="dotted", fill="gray80")
@@ -529,9 +534,11 @@ meth_unite_reshaped %>%
   group_by(sample) %>%
   filter(coverage>=15) %>%
   summarize(mean = mean(percMeth), nloci = n()) %>%
-  left_join(sample.info[c("treatment", "sample_seq", "high_or_low_co2")], by=c("sample"="sample_seq")) %>%
-  ggplot(aes(x=nloci, y=mean, label=sample)) + geom_point(aes(colour=high_or_low_co2)) + 
-  geom_label_repel(min.segment.length=0.25,aes(colour=high_or_low_co2)) + theme_minimal() +
+  left_join(sample.info[c("treatment", "sample", "sample_seq", "high_or_low_co2")] %>% rename("sample"="sample_prep"), 
+            by=c("sample"="sample_seq")) %>%
+  ggplot(aes(x=nloci, y=mean, label=sample_prep)) + 
+  geom_point(aes(colour=high_or_low_co2)) + 
+  geom_label_repel(label.size=0.05, min.segment.length=0.15,aes(colour=high_or_low_co2)) + theme_minimal() +
   ggtitle("% methylation ~ # loci, 15x coverage minimum") +
   scale_color_manual(values = c("red", "blue")) + 
   geom_smooth(method = "loess", se=T, color="black", linetype="dotted", fill="gray80")
@@ -590,6 +597,62 @@ sample.info %>% filter(sample_seq %in%  c("1", "2", "3", "4", "7", "10", "11", "
 
 # sample.info %>% arrange(sample_seq) %>% dplyr::select(sample_seq, sample) %>% 
 #   filter(sample_seq %!in%  c("1", "2", "3", "4", "7", "10", "11", "12", "15", "17", "18", "20")) %>% write_clip()
+```
+### Is bacterial load high in "bad" samples?
+
+```{r}
+# specify the path to your files
+path <- "../results/MEGAN"
+
+# get all files in the directory
+files <- list.files(path, pattern = "*.tab", full.names = TRUE) 
+
+megan.df <- files %>%
+  map_df(~{
+    read_tsv(.x, col_names = FALSE) %>%
+    set_names(c("phylum", "count")) %>%
+    mutate(sample = str_remove(basename(.x), ".MEGAN.taxonName_to_count_summarized-phylum.tab"))  # remove the extension from the filename
+  })
+
+megan.df <- megan.df %>%
+ mutate(sample.read = str_replace_all(sample, '.trimmed', "")) %>%
+ mutate(sample = str_replace_all(sample, '.trimmed.R1|.trimmed.R2', "")) %>%
+ left_join(
+    read_sheet("https://docs.google.com/spreadsheets/d/1ym0XnYVts98tIUCn0kIaU6VuvqxzV7LoSx9RHwLdiIs/edit?usp=sharing", "data_071119collection") %>% 
+ clean_names() %>% dplyr::select(sample, tank, high_or_low_co2, developmental_stage, dna_siolation_batch), 
+            by="sample") %>%
+  mutate_at(vars(phylum, sample, sample.read, tank, high_or_low_co2, developmental_stage, dna_siolation_batch), as.factor)
+
+# # To determine top phyla
+# options(scipen = 999)
+# megan.df %>% 
+#  pivot_wider(names_from = phylum, values_from = count, values_fill = 0) %>%
+#  mutate(total = rowSums(dplyr::select(., -sample, -sample.read, -tank, -high_or_low_co2, -developmental_stage, -dna_siolation_batch), na.rm = TRUE)) %>%
+#  mutate_at(vars(-sample, -sample.read, -tank, -high_or_low_co2, -developmental_stage, -dna_siolation_batch, -total), funs(. / total, )) %>%
+#  # calculate mean fraction for each phylum to ID the top contributors
+#  dplyr::select(where(is.numeric)) %>%
+#   summarise(across(c(everything(), -total), mean)) %>% t() %>% as.data.frame() %>% arrange(desc(V1)) %>% round(digits=3)
+# options(scipen = 0)
+
+megan.df.plot <- megan.df %>%
+ pivot_wider(names_from = phylum, values_from = count, values_fill = 0) %>%
+ mutate(total = rowSums(dplyr::select(., -sample, -sample.read, -tank, -high_or_low_co2, -developmental_stage, -dna_siolation_batch), na.rm = TRUE)) %>%
+ mutate_at(vars(-sample, -sample.read, -tank, -high_or_low_co2, -developmental_stage, -dna_siolation_batch, -total), funs(. / total, )) %>%
+ arrange(desc(Arthropoda)) %>%
+ mutate(sample.read = factor(sample.read, rev(unique(sample.read)), ordered = TRUE)) %>%
+ pivot_longer(cols = c(-total, -sample, -sample.read, -tank, -high_or_low_co2, -developmental_stage, -dna_siolation_batch),
+              names_to = "phylum", values_to = "fraction") %>%
+  filter(phylum %in% c("Arthropoda", "Chordata", "Microsporidia", "Proteobacteria", "Bacteroidetes"))
+
+# generate vector of colors identifying treatment for x axis labels 
+a <- ifelse((megan.df.plot %>% dplyr::select(sample.read, high_or_low_co2) %>% distinct())$high_or_low_co2 == "H", "red", "blue")
+
+ggplot(megan.df.plot, aes(fill=phylum, y=fraction, x=sample.read)) + geom_bar(position="stack", stat="identity") + 
+  theme_minimal() + theme(legend.position = "bottom", axis.text.x = element_text(angle = 90, colour=rev(a))) +
+  xlab(NULL) + ylab("Fraction of reads")
+
+save(megan.df, file = "../results/MEGAN/megan.df")
+save(megan.df.plot, file = "../results/MEGAN/megan.df.plot")
 ```
 
 ### Run analyses without the low-CpG methylation samples 
