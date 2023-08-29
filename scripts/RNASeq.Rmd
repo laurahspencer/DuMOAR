@@ -649,6 +649,7 @@ print("Comparison: Low pCO2 (control) vs. High pCO2 (OA treatment(")
 summary(res.treatment <- results(dds.DESeq.treatment, alpha=0.05))
 paste("No. of genes differentially expressed (padj<0.05) by OA treatment:",  sum(res.treatment$padj < 0.05, na.rm=TRUE))
 save(res.treatment, file = "../results/DESeq2/res.treatment")
+load(file = "../results/DESeq2/res.treatment")
 ```
 
 #### Total number of genes analyzed 
@@ -758,4 +759,20 @@ print(
 }
 ```
 
+Copy annotated DEGs to clipboard
+
+```{r}
+gensas.blast %>% filter(e_value<1e-10) %>%
+filter(id %in% 
+rownames(diffex.treatment)) %>% write_clip()
+
+diffex.treatment %>% as.data.frame() %>%
+  rownames_to_column("geneid") %>% 
+  left_join(gensas.blast %>% filter(e_value<1e-10), 
+            by=c("geneid"="id")) %>%
+  arrange(log2FoldChange) %>%
+  mutate(across(c(2:5), round, 2)) %>%
+  mutate(across(c(6:7), round, 4)) %>% 
+  write_csv(file = "../results/DESeq2/DEGs.csv")
+```
 
