@@ -1,0 +1,114 @@
+Version Info: ### PLEASE UPGRADE SALMON ###
+### A newer version of salmon with important bug fixes and improvements is available. ####
+###
+The newest version, available at https://github.com/COMBINE-lab/salmon/releases
+contains new features, improvements, and bug fixes; please upgrade at your
+earliest convenience.
+###
+Sign up for the salmon mailing list to hear about new versions, features and updates at:
+https://oceangenomics.com/subscribe
+### salmon (selective-alignment-based) v1.9.0
+### [ program ] => salmon 
+### [ command ] => quant 
+### [ index ] => { /share/nwfsc/ggoetz/202301-dungeness_crab-transcriptome/ref/salmon/all.megan6 }
+### [ libType ] => { A }
+### [ output ] => { /share/nwfsc/ggoetz/202301-dungeness_crab-transcriptome/salmon/all.megan6/CH10-11.quant }
+### [ mates1 ] => { /share/nwfsc/ggoetz/202301-dungeness_crab-transcriptome/megan6/reads/20230730.mmag.CH10-11.trimmed.megan_R1.fq.gz }
+### [ mates2 ] => { /share/nwfsc/ggoetz/202301-dungeness_crab-transcriptome/megan6/reads/20230730.mmag.CH10-11.trimmed.megan_R2.fq.gz }
+### [ validateMappings ] => { }
+### [ threads ] => { 20 }
+Logs will be written to /share/nwfsc/ggoetz/202301-dungeness_crab-transcriptome/salmon/all.megan6/CH10-11.quant/logs
+[2023-09-21 07:02:27.551] [jointLog] [info] setting maxHashResizeThreads to 20
+[2023-09-21 07:02:27.551] [jointLog] [info] Fragment incompatibility prior below threshold.  Incompatible fragments will be ignored.
+[2023-09-21 07:02:27.551] [jointLog] [info] Usage of --validateMappings implies use of minScoreFraction. Since not explicitly specified, it is being set to 0.65
+[2023-09-21 07:02:27.551] [jointLog] [info] Setting consensusSlack to selective-alignment default of 0.35.
+[2023-09-21 07:02:27.551] [jointLog] [info] parsing read library format
+[2023-09-21 07:02:27.551] [jointLog] [info] There is 1 library.
+[2023-09-21 07:02:27.552] [jointLog] [info] Loading pufferfish index
+[2023-09-21 07:02:27.552] [jointLog] [info] Loading dense pufferfish index.
+-----------------------------------------
+| Loading contig table | Time = 52.864 ms
+-----------------------------------------
+size = 437842
+-----------------------------------------
+| Loading contig offsets | Time = 1.0907 ms
+-----------------------------------------
+-----------------------------------------
+| Loading reference lengths | Time = 514.31 us
+-----------------------------------------
+-----------------------------------------
+| Loading mphf table | Time = 22.95 ms
+-----------------------------------------
+size = 94501831
+Number of ones: 437841
+Number of ones per inventory item: 512
+Inventory entries filled: 856
+-----------------------------------------
+| Loading contig boundaries | Time = 155.36 ms
+-----------------------------------------
+size = 94501831
+-----------------------------------------
+| Loading sequence | Time = 15.076 ms
+-----------------------------------------
+size = 81366601
+-----------------------------------------
+| Loading positions | Time = 169.1 ms
+-----------------------------------------
+size = 133861661
+-----------------------------------------
+| Loading reference sequence | Time = 20.629 ms
+-----------------------------------------
+-----------------------------------------
+| Loading reference accumulative lengths | Time = 1.3707 ms
+-----------------------------------------
+
+
+
+
+[2023-09-21 07:02:27.992] [jointLog] [info] done
+[2023-09-21 07:02:28.032] [jointLog] [info] Index contained 191,492 targets
+[2023-09-21 07:02:28.085] [jointLog] [info] Number of decoys : 0
+[2023-09-21 07:02:28.873] [jointLog] [info] Automatically detected most likely library type as IU
+
+[A[32mprocessed[31m 500,000 [32mfragments[0m
+hits: 1,333,123, hits per frag:  2.96046[A[32mprocessed[31m 1,000,000 [32mfragments[0m
+hits: 2,679,398, hits per frag:  2.76157[A[32mprocessed[31m 1,500,000 [32mfragments[0m
+hits: 4,026,886, hits per frag:  2.79584[A[32mprocessed[31m 2,000,000 [32mfragments[0m
+hits: 5,379,058, hits per frag:  2.81248[A[32mprocessed[31m 2,500,000 [32mfragments[0m
+hits: 6,733,134, hits per frag:  2.70296[A[32mprocessed[31m 3,000,000 [32mfragments[0m
+hits: 8,087,453, hits per frag:  2.74769[A[32mprocessed[31m 3,500,001 [32mfragments[0m
+hits: 9,445,516, hits per frag:  2.75334[A[32mprocessed[31m 4,000,000 [32mfragments[0m
+hits: 10,804,104, hits per frag:  2.74483[A[32mprocessed[31m 4,500,000 [32mfragments[0m
+hits: 12,165,133, hits per frag:  2.73404[A[32mprocessed[31m 5,000,000 [32mfragments[0m
+hits: 13,528,065, hits per frag:  2.74535[A[32mprocessed[31m 5,500,001 [32mfragments[0m
+hits: 14,894,317, hits per frag:  2.74947
+
+
+
+
+
+
+
+[2023-09-21 07:02:51.449] [jointLog] [info] Computed 81,374 rich equivalence classes for further processing
+[2023-09-21 07:02:51.449] [jointLog] [info] Counted 5,756,793 total reads in the equivalence classes 
+[2023-09-21 07:02:51.458] [jointLog] [info] Number of mappings discarded because of alignment score : 1,196,863
+[2023-09-21 07:02:51.458] [jointLog] [info] Number of fragments entirely discarded because of alignment score : 224,584
+[2023-09-21 07:02:51.458] [jointLog] [info] Number of fragments discarded because they are best-mapped to decoys : 0
+[2023-09-21 07:02:51.458] [jointLog] [info] Number of fragments discarded because they have only dovetail (discordant) mappings to valid targets : 185,800
+[2023-09-21 07:02:51.458] [jointLog] [info] Mapping rate = 96.0362%
+
+[2023-09-21 07:02:51.458] [jointLog] [info] finished quantifyLibrary()
+[2023-09-21 07:02:51.459] [jointLog] [info] Starting optimizer
+[2023-09-21 07:02:51.549] [jointLog] [info] Marked 0 weighted equivalence classes as degenerate
+[2023-09-21 07:02:51.562] [jointLog] [info] iteration = 0 | max rel diff. = 2577.67
+[2023-09-21 07:02:52.548] [jointLog] [info] iteration = 100 | max rel diff. = 15.8968
+[2023-09-21 07:02:53.514] [jointLog] [info] iteration = 200 | max rel diff. = 4.87709
+[2023-09-21 07:02:54.481] [jointLog] [info] iteration = 300 | max rel diff. = 1.6491
+[2023-09-21 07:02:55.448] [jointLog] [info] iteration = 400 | max rel diff. = 0.136085
+[2023-09-21 07:02:56.414] [jointLog] [info] iteration = 500 | max rel diff. = 0.0492987
+[2023-09-21 07:02:57.382] [jointLog] [info] iteration = 600 | max rel diff. = 0.0931525
+[2023-09-21 07:02:58.353] [jointLog] [info] iteration = 700 | max rel diff. = 0.0465153
+[2023-09-21 07:02:58.559] [jointLog] [info] iteration = 722 | max rel diff. = 0.00987782
+[2023-09-21 07:02:58.595] [jointLog] [info] Finished optimizer
+[2023-09-21 07:02:58.595] [jointLog] [info] writing output 
+

@@ -1,0 +1,22 @@
+{
+    "read_files": "[ /share/nwfsc/ggoetz/202301-dungeness_crab-transcriptome/megan6/reads/20230730.mmag.CH03-04.trimmed.megan_R1.fq.gz, /share/nwfsc/ggoetz/202301-dungeness_crab-transcriptome/megan6/reads/20230730.mmag.CH03-04.trimmed.megan_R2.fq.gz]",
+    "expected_format": "IU",
+    "compatible_fragment_ratio": 1.0,
+    "num_compatible_fragments": 4335185,
+    "num_assigned_fragments": 4335185,
+    "num_frags_with_concordant_consistent_mappings": 4258868,
+    "num_frags_with_inconsistent_or_orphan_mappings": 200490,
+    "strand_mapping_bias": 0.5065193380024927,
+    "MSF": 0,
+    "OSF": 0,
+    "ISF": 2157199,
+    "MSR": 0,
+    "OSR": 0,
+    "ISR": 2101669,
+    "SF": 112372,
+    "SR": 88118,
+    "MU": 0,
+    "OU": 0,
+    "IU": 0,
+    "U": 0
+}
