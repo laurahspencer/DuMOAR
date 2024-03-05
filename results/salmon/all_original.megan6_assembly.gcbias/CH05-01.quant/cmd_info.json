@@ -1,0 +1,12 @@
+{
+    "salmon_version": "1.9.0",
+    "index": "/share/nwfsc/ggoetz/202301-dungeness_crab-transcriptome/ref/salmon/all.megan6",
+    "libType": "A",
+    "output": "/share/nwfsc/ggoetz/202301-dungeness_crab-transcriptome/salmon/all_original.megan6_assembly.gcbias/CH05-01.quant",
+    "mates1": "/share/nwfsc/ggoetz/202301-dungeness_crab-transcriptome/trimmed/CH05-01.trimmed.R1.fastq.gz",
+    "mates2": "/share/nwfsc/ggoetz/202301-dungeness_crab-transcriptome/trimmed/CH05-01.trimmed.R2.fastq.gz",
+    "validateMappings": [],
+    "threads": "20",
+    "gcBias": [],
+    "auxDir": "aux_info"
+}

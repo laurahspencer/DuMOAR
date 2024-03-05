@@ -1,0 +1,53 @@
+[2024-03-04 12:49:18.497] [jointLog] [info] setting maxHashResizeThreads to 20
+[2024-03-04 12:49:18.497] [jointLog] [info] Fragment incompatibility prior below threshold.  Incompatible fragments will be ignored.
+[2024-03-04 12:49:18.497] [jointLog] [info] Usage of --validateMappings implies use of minScoreFraction. Since not explicitly specified, it is being set to 0.65
+[2024-03-04 12:49:18.497] [jointLog] [info] Setting consensusSlack to selective-alignment default of 0.35.
+[2024-03-04 12:49:18.497] [jointLog] [info] parsing read library format
+[2024-03-04 12:49:18.497] [jointLog] [info] There is 1 library.
+[2024-03-04 12:49:18.543] [jointLog] [info] Loading pufferfish index
+[2024-03-04 12:49:18.551] [jointLog] [info] Loading dense pufferfish index.
+[2024-03-04 12:49:20.364] [jointLog] [info] done
+[2024-03-04 12:49:20.402] [jointLog] [info] Index contained 191,492 targets
+[2024-03-04 12:49:21.189] [jointLog] [info] Number of decoys : 0
+[2024-03-04 12:49:22.103] [jointLog] [info] Automatically detected most likely library type as IU
+
+[2024-03-04 12:52:03.300] [jointLog] [info] Computed 120,264 rich equivalence classes for further processing
+[2024-03-04 12:52:03.300] [jointLog] [info] Counted 17,002,373 total reads in the equivalence classes 
+[2024-03-04 12:52:03.307] [jointLog] [info] Number of mappings discarded because of alignment score : 167,530,695
+[2024-03-04 12:52:03.307] [jointLog] [info] Number of fragments entirely discarded because of alignment score : 2,486,031
+[2024-03-04 12:52:03.307] [jointLog] [info] Number of fragments discarded because they are best-mapped to decoys : 0
+[2024-03-04 12:52:03.307] [jointLog] [info] Number of fragments discarded because they have only dovetail (discordant) mappings to valid targets : 941,899
+[2024-03-04 12:52:03.307] [jointLog] [info] Mapping rate = 78.8995%
+
+[2024-03-04 12:52:03.307] [jointLog] [info] finished quantifyLibrary()
+[2024-03-04 12:52:03.309] [jointLog] [info] Starting optimizer
+[2024-03-04 12:52:03.396] [jointLog] [info] Marked 0 weighted equivalence classes as degenerate
+[2024-03-04 12:52:03.408] [jointLog] [info] iteration = 0 | max rel diff. = 5689.06
+[2024-03-04 12:52:03.521] [jointLog] [info] iteration 11, adjusting effective lengths to account for biases
+[2024-03-04 12:52:03.300] [fileLog] [info] 
+At end of round 0
+==================
+Observed 21549404 total fragments (21549404 in most recent round)
+
+[2024-03-04 12:52:09.356] [jointLog] [info] Computed expected counts (for bias correction)
+[2024-03-04 12:52:09.356] [jointLog] [info] processed bias for 0.0% of the transcripts
+[2024-03-04 12:52:09.721] [jointLog] [info] processed bias for 10.0% of the transcripts
+[2024-03-04 12:52:10.147] [jointLog] [info] processed bias for 20.0% of the transcripts
+[2024-03-04 12:52:10.499] [jointLog] [info] processed bias for 30.0% of the transcripts
+[2024-03-04 12:52:10.859] [jointLog] [info] processed bias for 40.0% of the transcripts
+[2024-03-04 12:52:11.331] [jointLog] [info] processed bias for 50.0% of the transcripts
+[2024-03-04 12:52:11.673] [jointLog] [info] processed bias for 60.0% of the transcripts
+[2024-03-04 12:52:12.213] [jointLog] [info] processed bias for 70.0% of the transcripts
+[2024-03-04 12:52:12.756] [jointLog] [info] processed bias for 80.0% of the transcripts
+[2024-03-04 12:52:13.860] [jointLog] [info] processed bias for 90.0% of the transcripts
+[2024-03-04 12:52:15.272] [jointLog] [info] processed bias for 100.0% of the transcripts
+[2024-03-04 12:52:16.230] [jointLog] [info] iteration = 100 | max rel diff. = 4.33283
+[2024-03-04 12:52:17.276] [jointLog] [info] iteration = 200 | max rel diff. = 0.310802
+[2024-03-04 12:52:18.321] [jointLog] [info] iteration = 300 | max rel diff. = 0.628367
+[2024-03-04 12:52:19.365] [jointLog] [info] iteration = 400 | max rel diff. = 0.202077
+[2024-03-04 12:52:20.410] [jointLog] [info] iteration = 500 | max rel diff. = 0.195889
+[2024-03-04 12:52:21.455] [jointLog] [info] iteration = 600 | max rel diff. = 0.0169073
+[2024-03-04 12:52:22.019] [jointLog] [info] iteration = 655 | max rel diff. = 0.00606666
+[2024-03-04 12:52:22.058] [jointLog] [info] Finished optimizer
+[2024-03-04 12:52:22.058] [jointLog] [info] writing output 
+

@@ -1,0 +1,51 @@
+[2024-03-04 12:52:23.634] [jointLog] [info] setting maxHashResizeThreads to 20
+[2024-03-04 12:52:23.634] [jointLog] [info] Fragment incompatibility prior below threshold.  Incompatible fragments will be ignored.
+[2024-03-04 12:52:23.634] [jointLog] [info] Usage of --validateMappings implies use of minScoreFraction. Since not explicitly specified, it is being set to 0.65
+[2024-03-04 12:52:23.634] [jointLog] [info] Setting consensusSlack to selective-alignment default of 0.35.
+[2024-03-04 12:52:23.634] [jointLog] [info] parsing read library format
+[2024-03-04 12:52:23.634] [jointLog] [info] There is 1 library.
+[2024-03-04 12:52:23.634] [jointLog] [info] Loading pufferfish index
+[2024-03-04 12:52:23.635] [jointLog] [info] Loading dense pufferfish index.
+[2024-03-04 12:52:24.070] [jointLog] [info] done
+[2024-03-04 12:52:24.110] [jointLog] [info] Index contained 191,492 targets
+[2024-03-04 12:52:24.902] [jointLog] [info] Number of decoys : 0
+[2024-03-04 12:52:25.921] [jointLog] [info] Automatically detected most likely library type as IU
+
+[2024-03-04 12:54:50.407] [fileLog] [info] 
+At end of round 0
+==================
+Observed 18975206 total fragments (18975206 in most recent round)
+
+[2024-03-04 12:54:50.407] [jointLog] [info] Computed 109,068 rich equivalence classes for further processing
+[2024-03-04 12:54:50.407] [jointLog] [info] Counted 14,234,777 total reads in the equivalence classes 
+[2024-03-04 12:54:50.416] [jointLog] [info] Number of mappings discarded because of alignment score : 160,746,445
+[2024-03-04 12:54:50.416] [jointLog] [info] Number of fragments entirely discarded because of alignment score : 2,772,885
+[2024-03-04 12:54:50.416] [jointLog] [info] Number of fragments discarded because they are best-mapped to decoys : 0
+[2024-03-04 12:54:50.416] [jointLog] [info] Number of fragments discarded because they have only dovetail (discordant) mappings to valid targets : 1,019,472
+[2024-03-04 12:54:50.416] [jointLog] [info] Mapping rate = 75.0178%
+
+[2024-03-04 12:54:50.416] [jointLog] [info] finished quantifyLibrary()
+[2024-03-04 12:54:50.417] [jointLog] [info] Starting optimizer
+[2024-03-04 12:54:50.503] [jointLog] [info] Marked 0 weighted equivalence classes as degenerate
+[2024-03-04 12:54:50.514] [jointLog] [info] iteration = 0 | max rel diff. = 5276.62
+[2024-03-04 12:54:50.621] [jointLog] [info] iteration 11, adjusting effective lengths to account for biases
+[2024-03-04 12:54:56.047] [jointLog] [info] Computed expected counts (for bias correction)
+[2024-03-04 12:54:56.047] [jointLog] [info] processed bias for 0.0% of the transcripts
+[2024-03-04 12:54:56.368] [jointLog] [info] processed bias for 10.0% of the transcripts
+[2024-03-04 12:54:56.715] [jointLog] [info] processed bias for 20.0% of the transcripts
+[2024-03-04 12:54:57.052] [jointLog] [info] processed bias for 30.0% of the transcripts
+[2024-03-04 12:54:57.320] [jointLog] [info] processed bias for 40.0% of the transcripts
+[2024-03-04 12:54:57.624] [jointLog] [info] processed bias for 50.0% of the transcripts
+[2024-03-04 12:54:58.039] [jointLog] [info] processed bias for 60.0% of the transcripts
+[2024-03-04 12:54:58.638] [jointLog] [info] processed bias for 70.0% of the transcripts
+[2024-03-04 12:54:59.504] [jointLog] [info] processed bias for 80.0% of the transcripts
+[2024-03-04 12:55:00.296] [jointLog] [info] processed bias for 90.0% of the transcripts
+[2024-03-04 12:55:01.527] [jointLog] [info] processed bias for 100.0% of the transcripts
+[2024-03-04 12:55:02.460] [jointLog] [info] iteration = 100 | max rel diff. = 10.7048
+[2024-03-04 12:55:03.490] [jointLog] [info] iteration = 200 | max rel diff. = 0.481244
+[2024-03-04 12:55:04.525] [jointLog] [info] iteration = 300 | max rel diff. = 0.165531
+[2024-03-04 12:55:05.554] [jointLog] [info] iteration = 400 | max rel diff. = 0.496609
+[2024-03-04 12:55:06.448] [jointLog] [info] iteration = 488 | max rel diff. = 0.00683545
+[2024-03-04 12:55:06.487] [jointLog] [info] Finished optimizer
+[2024-03-04 12:55:06.487] [jointLog] [info] writing output 
+

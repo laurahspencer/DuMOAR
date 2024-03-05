@@ -1,0 +1,22 @@
+{
+    "read_files": "[ /share/nwfsc/ggoetz/202301-dungeness_crab-transcriptome/trimmed/CH10-08.trimmed.R1.fastq.gz, /share/nwfsc/ggoetz/202301-dungeness_crab-transcriptome/trimmed/CH10-08.trimmed.R2.fastq.gz]",
+    "expected_format": "IU",
+    "compatible_fragment_ratio": 1.0,
+    "num_compatible_fragments": 18223141,
+    "num_assigned_fragments": 18223141,
+    "num_frags_with_concordant_consistent_mappings": 17375505,
+    "num_frags_with_inconsistent_or_orphan_mappings": 1156315,
+    "strand_mapping_bias": 0.4967844675593601,
+    "MSF": 0,
+    "OSF": 0,
+    "ISF": 8631881,
+    "MSR": 0,
+    "OSR": 0,
+    "ISR": 8743624,
+    "SF": 585016,
+    "SR": 571299,
+    "MU": 0,
+    "OU": 0,
+    "IU": 0,
+    "U": 0
+}
