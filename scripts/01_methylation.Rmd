@@ -21,7 +21,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ### Load libraries
 
 ```{r message=FALSE, warning=FALSE, results=FALSE}
-list.of.packages <- c("tidyverse", "reshape2", "here", "methylKit", "ggforce", "matrixStats", "Pstat", "viridis", "plotly", "readr", "GenomicRanges", "vegan", "factoextra", "PerformanceAnalytics", "corrplot", "janitor", "googlesheets4", "ggrepel", "clipr", "plotly") #add new libraries here 
+list.of.packages <- c("tidyverse", "reshape2", "here", "methylKit", "ggforce", "matrixStats", "Pstat", "viridis", "plotly", "readr", "GenomicRanges", "vegan", "factoextra", "PerformanceAnalytics", "corrplot", "janitor", "googlesheets4", "ggrepel", "clipr", "plotly", "wordcloud", "tm", "slam", "eulerr", "forcats", "ggpubr") #add new libraries here 
 
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
@@ -386,6 +386,7 @@ for (i in 1:20) {
 meth_5x=filterByCoverage(meth_obj,lo.count=5,lo.perc=NULL,
                                       hi.count=100,hi.perc=NULL)
 save(meth_5x, file="../results/methylkit/meth_5x")
+load(file="../results/methylkit/meth_5x")
 ```
 
 #### Now look at CpG methylation after filtering for 5x coverage 
@@ -403,6 +404,7 @@ getMethylationStats(meth_5x[[i]],plot=T,both.strands=TRUE)
 meth_10x=filterByCoverage(meth_obj,lo.count=10,lo.perc=NULL,
                                       hi.count=100,hi.perc=NULL)
 save(meth_10x, file="../results/methylkit/meth_10x")
+load(file="../results/methylkit/meth_10x")
 ```
 
 #### Now look at CpG methylation after filtering for 10x coverage 
@@ -421,7 +423,7 @@ getMethylationStats(meth_10x[[i]],plot=T,both.strands=TRUE)
 ```{r}
 meth_unite=methylKit::unite(meth_obj, destrand=TRUE, min.per.group=1L)
 save(meth_unite, file = "../results/methylkit/meth_unite") #save object to file
-#load(file = "../results/methylkit/meth_unite") #load object from file if needed
+load(file = "../results/methylkit/meth_unite") #load object from file if needed
 ```
 
 ### Cluster analysis 
@@ -454,7 +456,7 @@ meth_unite_reshaped <- meth_unite %>%
   mutate(sample=as.numeric(sample))
 
 save(meth_unite_reshaped, file = "../results/methylkit/meth_unite_reshaped")
-#load(file = "../results/methylkit/meth_unite_reshaped")  
+load(file = "../results/methylkit/meth_unite_reshaped")  
 ```
 
 ```{r, cache=TRUE, eval=FALSE}
@@ -529,7 +531,11 @@ meth_unite_reshaped %>%
 
 #### What is mean % methylated with 15x coverage?
 
+NOTE: label = "sample_prep" has the format "CH##-##", while "sample" uses the numbers 1-20. 
+
 ```{r, warning=F}
+sample.info %>% dplyr::select(sample, sample_seq) %>% arrange(sample_seq)
+
 meth_unite_reshaped %>% 
   group_by(sample) %>%
   filter(coverage>=15) %>%
@@ -538,7 +544,7 @@ meth_unite_reshaped %>%
             by=c("sample"="sample_seq")) %>%
   ggplot(aes(x=nloci, y=mean, label=sample_prep)) + 
   geom_point(aes(colour=high_or_low_co2)) + 
-  geom_label_repel(label.size=0.05, min.segment.length=0.15,aes(colour=high_or_low_co2)) + theme_minimal() +
+  geom_label_repel(label.size=0.03, min.segment.length=0.15,aes(colour=high_or_low_co2)) + theme_minimal() +
   ggtitle("% methylation ~ # loci, 15x coverage minimum") +
   scale_color_manual(values = c("red", "blue")) + 
   geom_smooth(method = "loess", se=T, color="black", linetype="dotted", fill="gray80")
@@ -546,6 +552,29 @@ meth_unite_reshaped %>%
 #### Is % methylation a function of coverage within a sample? 
 
 The following samples have low CpG methylation: 5, 6, 8 (kinda), 9, 13, 14, 16, 19. Check out each sample individually 
+
+FYI here are sample-prep vs. sample_seq labels, weird samples have *
+
+CH01-06	= 1			
+CH01-14	= 2			
+CH01-22	= 3			
+CH01-38	= 4			
+CH03-04	= 5*			
+CH03-15	= 6*			
+CH03-33	= 7			
+CH05-01	= 8*			
+CH05-06	= 9*			
+CH05-21	= 10	
+CH05-24	= 11			
+CH07-06	= 12			
+CH07-11	= 13*			
+CH07-24	= 14*			
+CH09-02	= 15			
+CH09-13	= 16*			
+CH09-28	= 17			
+CH10-01	= 18			
+CH10-08	= 19*			
+CH10-11	= 20	
 
 Weird samples have lots of loci with 0% methylation 
 
@@ -673,6 +702,7 @@ PCASamples(meth_unite_nolows)
 ```{r}
 (sample.info %>% arrange(sample_seq))[c(1:4, 7, 10, 11, 12, 15, 17, 18, 20),]
 ```
+
 ```{r}
 meth_obj_nolow <- reorganize(methylObj = meth_obj, sample.ids = c("1", "2", "3", "4", "7", "10", "11", "12", "15", "17", "18", "20"),
                              treatment = as.numeric((sample.info %>% 
@@ -690,19 +720,17 @@ PCA.5x <- PCASamples(meth_unite_5x, obj.return = TRUE) #Run a PCA analysis on pe
 summary(PCA.5x)  
 #PC1=11.6% PC2=10.6% 
 
-
 meth_10x=filterByCoverage(meth_obj_nolow,
                          lo.count=10,lo.perc=NULL,
                                       hi.count=100,hi.perc=NULL)
 
 meth_unite_10x=methylKit::unite(meth_10x, destrand=TRUE)  # by not setting min.per.group manually, all samples must meet threshold for locus to be retained
 
-PCA.10x <- PCASamples(meth_unite_10x, obj.return = TRUE) #Run a PCA analysis on percent methylation for all samples. methylKit uses prcomp to create the PCA matrix
-summary(PCA.10x)  
-#PC1=12.0% PC2=10.4% 
-
 save(meth_10x, file="../results/methylkit/meth_10x")
 save(meth_unite_10x, file="../results/methylkit/meth_unite_10x")
+
+load(file="../results/methylkit/meth_10x")
+load(file="../results/methylkit/meth_unite_10x")
 ```
 Important note!  The column names in the meth_unite_10x object are NOT the sample IDs. 
 
@@ -712,44 +740,92 @@ THE UNITE() FUNCTION ASSIGNS COLUMN NAMES USING THE CONSECUTIVE NUMBERS 1-13, WH
 getSampleID(meth_unite_10x) #correct sample IDs
 colnames(meth_unite_10x) # columns containing data do NOT have sample iDs, but are rather the n'th item in the vector of sample IDs 
 ```
-
-
-PCA analysis and figure 
+PCA analysis & figure 
 
 ```{r}
-plotCustomization <- (sample.info %>% arrange(sample_seq))[c(1:4, 7, 10, 11, 12, 15, 17, 18, 20),c("high_or_low_co2", "sample_seq", "tank")] %>%
-  mutate(color=case_when(high_or_low_co2 == "H" ~ "firebrick3", TRUE ~ "dodgerblue3"),
-         symbol=case_when(high_or_low_co2 == "H" ~ 16, TRUE ~ 17))
-
-# Save size: width=650 height=600
-par(mar = c(5, 5, 1, 1)) #Specify inner and outer margins
-PCA.figure <- ordiplot(PCA.10x, choices = c(1, 2), type = "none", display = "sites", cex = 0.4, xlab = "", ylab = "", xaxt = "n", yaxt = "n") #Use ordiplot to create base biplot. Do not add any points
-points(PCA.figure, "sites", col = as.character(plotCustomization$color), pch = plotCustomization$symbol, cex = 2.2)  #use points
-#text(PCA.figure$sites, col = as.character(plotCustomization$color), labels=plotCustomization$sample_seq, cex=1.5) #use sample number 
-
-#Add multiple white boxes on top of the default black box to manually change the color
-box(col = "white")
-box(col = "white")
-box(col = "white")
-box(col = "white")
-box(col = "white")
-box(col = "white")
-box(col = "white")
-box(col = "white")
-box(col = "white")
-box(col = "white")
-#ordiellipse(PCA.filtered, plotCustomization$population, show.groups = "HC", col = "firebrick3") #Add confidence ellipse around the samples in elevated pCO2
-#ordiellipse(PCA.filtered, plotCustomization$population, show.groups = "SS", col = "dodgerblue3") #Add confidence ellipse around the samples in ambient pCO2
-axis(side =  1, labels = TRUE, col = "grey80", cex.axis = 1.7) #Add x-axis
-mtext(side = 1, text = "PC 1 (12.0%)", line = 3, cex = 1.5) #Add x-axis label
-axis(side =  2, labels = TRUE, col = "grey80", cex.axis = 1.7) #Add y-axis
-mtext(side = 2, text = "PC 2 (10.4%)", line = 3, cex = 1.5) #Add y-axis label
-legend("topleft", 
-       pch = c(16, 17), 
-       legend = c("High pCO2", "Control pCO2"), 
-       col = c(c("firebrick3", "dodgerblue3")), 
-       cex = 1.3, bty = "n") #Add a legend with information about ambient and elevated samples
+PCA.10x <- PCASamples(meth_unite_10x, obj.return = TRUE) #Run a PCA analysis on percent methylation for all samples. methylKit uses prcomp to create the PCA matrix
+summary(PCA.10x)  
+#PC1=12.0% PC2=10.4% 
 ```
+
+
+```{r}
+# PCA using prcomp etc., but NOTE that I pull the covariance matrix from the SNPRelate PCA command  
+# pca.princomp.gen <- princomp(covmat=pca$genmat, scores=T, cor = F) #specify "covmat" because input is a covariance matrix (not raw data!)
+# summary(pca.princomp.gen)
+# pca.eigenval(pca.princomp.gen)[2,1:5] #The Proporation of Variance (aka %variance)  
+# screeplot(pca.princomp.gen, bstick=TRUE) #PC axes aren't super sign.
+
+
+screeplot(PCA.10x, bstick=TRUE) #PC axes aren't super sign.
+
+getSampleID(meth_unite_10x) #correct sample IDs
+
+tab.meth <- data.frame(sample.id = rownames(PCA.10x$x),
+    PC1.meth = PCA.10x$x[,1],    # the first eigenvector
+    PC2.meth = PCA.10x$x[,2],    # the second eigenvector
+    PC3.meth = PCA.10x$x[,3],    # the third eigenvector
+    PC4.meth = PCA.10x$x[,4],    # the fourth eigenvector
+    stringsAsFactors = FALSE)
+pc.percent.meth <- summary(PCA.10x)$importance["Proportion of Variance",c("PC1", "PC2", "PC3", "PC4")]
+
+shapiro.test(PCA.10x$x) #Multivariate normality assumption not met
+
+tab.meth.annot <- left_join(tab.meth, sample.info %>% mutate(sample_seq=as.character(sample_seq)), 
+                            by=c("sample.id"="sample_seq")) %>% droplevels()
+group <- as.factor(tab.meth.annot$high_or_low_co2)
+
+ggscatter(tab.meth.annot,
+          x="PC1.meth", y="PC2.meth", col="high_or_low_co2", shape="high_or_low_co2", size=3.5, alpha=0.85, 
+          ellipse = F, star.plot = T) +
+  theme_minimal() + ggtitle("Global methylation PC1xPC2") + 
+  xlab(paste("PC1 (", 100*round(pc.percent.meth[1], digits = 3), "%)", sep="")) + 
+  ylab(paste("PC2 (", 100*round(pc.percent.meth[2], digits = 3), "%)", sep="")) + 
+  theme(legend.position = "right", legend.text=element_text(size=8), legend.title=element_text(size=9)) + 
+  scale_color_manual(name="Treatment", 
+                     values=c("L"="dodgerblue3",
+                              "H"="firebrick3"),
+                     labels=c("L"="Control",
+                              "H"="High pCO2")) +
+  scale_shape_manual(guide="none", values=c("L"=19, "H"=17)) +
+  guides(fill="none", colour = guide_legend(override.aes = list(size=3.5, linetype="blank", shape=c(19, 17))))
+```
+<!-- PCA plot using ordiplot -->
+
+<!-- ```{r} -->
+<!-- plotCustomization <- (sample.info %>% arrange(sample_seq))[c(1:4, 7, 10, 11, 12, 15, 17, 18, 20),c("high_or_low_co2", "sample_seq", "tank")] %>% -->
+<!--   mutate(color=case_when(high_or_low_co2 == "H" ~ "firebrick3", TRUE ~ "dodgerblue3"), -->
+<!--          symbol=case_when(high_or_low_co2 == "H" ~ 16, TRUE ~ 17)) -->
+
+<!-- # Save size: width=650 height=600 -->
+<!-- par(mar = c(5, 5, 1, 1)) #Specify inner and outer margins -->
+<!-- PCA.figure <- ordiplot(PCA.10x, choices = c(1, 2), type = "none", display = "sites", cex = 0.4, xlab = "", ylab = "", xaxt = "n", yaxt = "n") #Use ordiplot to create base biplot. Do not add any points -->
+<!-- points(PCA.figure, "sites", col = as.character(plotCustomization$color), pch = plotCustomization$symbol, cex = 2.2)  #use points -->
+<!-- #text(PCA.figure$sites, col = as.character(plotCustomization$color), labels=plotCustomization$sample_seq, cex=1.5) #use sample number  -->
+
+<!-- #Add multiple white boxes on top of the default black box to manually change the color -->
+<!-- box(col = "white") -->
+<!-- box(col = "white") -->
+<!-- box(col = "white") -->
+<!-- box(col = "white") -->
+<!-- box(col = "white") -->
+<!-- box(col = "white") -->
+<!-- box(col = "white") -->
+<!-- box(col = "white") -->
+<!-- box(col = "white") -->
+<!-- box(col = "white") -->
+<!-- #ordiellipse(PCA.filtered, plotCustomization$population, show.groups = "HC", col = "firebrick3") #Add confidence ellipse around the samples in elevated pCO2 -->
+<!-- #ordiellipse(PCA.filtered, plotCustomization$population, show.groups = "SS", col = "dodgerblue3") #Add confidence ellipse around the samples in ambient pCO2 -->
+<!-- axis(side =  1, labels = TRUE, col = "grey80", cex.axis = 1.7) #Add x-axis -->
+<!-- mtext(side = 1, text = "PC 1 (12.0%)", line = 3, cex = 1.5) #Add x-axis label -->
+<!-- axis(side =  2, labels = TRUE, col = "grey80", cex.axis = 1.7) #Add y-axis -->
+<!-- mtext(side = 2, text = "PC 2 (10.4%)", line = 3, cex = 1.5) #Add y-axis label -->
+<!-- legend("topleft",  -->
+<!--        pch = c(16, 17),  -->
+<!--        legend = c("High pCO2", "Control pCO2"),  -->
+<!--        col = c(c("firebrick3", "dodgerblue3")),  -->
+<!--        cex = 1.3, bty = "n") #Add a legend with information about ambient and elevated samples -->
+<!-- ``` -->
 
 ### Save PC scores and R object for possible integration with other data
 
@@ -759,6 +835,7 @@ NOTE: this PCA was run with _all_ methylated loci data after filtering for 10x a
 save(PCA.10x, file="../results/methylkit/PCA.10x")
 write_delim(data.frame(PCA.10x$x) %>% tibble::rownames_to_column("sample"), "../results/methylkit/PC-scores-methylation-10x.tab",  delim = '\t', col_names = TRUE)
 ```
+
 
 ### Quick check to confirm that removed samples should definitely be removed: 
 
@@ -839,7 +916,7 @@ hist(perc.meth, col="gray50" )
 
 # # Save % methylation df to object and .tab file 
 # save(perc.meth, file = "../analyses/methylation-filtered/R-objects/perc.meth") #save object to file 
-# #load(file = "../analyses/methylation-filtered/R-objects/perc.meth") #load object if needed
+#load(file = "../analyses/methylation-filtered/R-objects/perc.meth") #load object if needed
 # write.table((as.data.frame(perc.meth) %>% tibble::rownames_to_column("contig")), file = here::here("analyses", "methylation-filtered", "percent-methylation-filtered.tab"), sep = '\t', na = "NA", row.names = FALSE, col.names = TRUE)
 
 # What percentage of loci have ZERO methylation? 
@@ -906,8 +983,53 @@ paste("Number loci hyper-methylated in high pCO2 with 25% difference: ", getData
 ```{r}
 write.table(myDiff25p, file = "../results/methylkit/myDiff25p.tab", sep = "\t", col.names = TRUE)
 save(myDiff25p, file="../results/methylkit/myDiff25p")
-#load(file="../analyses/DMLs/myDiff25p") #load if needed
+#load(file="../results/methylkit/myDiff25p") #load if needed
 ```
+
+
+PCA analysis & figure, DML's only for integration with expression data! 
+
+```{r}
+temp <- meth_unite_10x %>% set_rownames(paste(meth_unite_10x$chr, meth_unite_10x$start, sep="."))
+dmls <- c((myDiff25p %>% getData() %>% mutate(dml=paste(chr, start, sep=".")))$dml)
+
+PCA.10x.dmls <- PCASamples(temp[rownames(temp) %in% dmls,], obj.return = TRUE)
+summary(PCA.10x.dmls)  
+#PC1=26.2% PC2=9.3% 
+
+screeplot(PCA.10x.dmls, bstick=TRUE) #PC1 significant 
+
+tab.meth.dml <- data.frame(sample.id = rownames(PCA.10x.dmls$x),
+    PC1.meth = PCA.10x.dmls$x[,1],    # the first eigenvector
+    PC2.meth = PCA.10x.dmls$x[,2],    # the second eigenvector
+    PC3.meth = PCA.10x.dmls$x[,3],    # the third eigenvector
+    PC4.meth = PCA.10x.dmls$x[,4],    # the fourth eigenvector
+    stringsAsFactors = FALSE)
+pc.percent.meth.dmls <- summary(PCA.10x.dmls)$importance["Proportion of Variance",c("PC1", "PC2", "PC3", "PC4")]
+
+shapiro.test(PCA.10x.dmls$x) #Multivariate normality assumption met
+
+tab.meth.dmls.annot <- left_join(tab.meth.dml, sample.info %>% mutate(sample_seq=as.character(sample_seq)), 
+                            by=c("sample.id"="sample_seq")) %>% droplevels()
+group <- as.factor(tab.meth.dmls.annot$high_or_low_co2)
+
+ggscatter(tab.meth.dmls.annot,
+          x="PC1.meth", y="PC2.meth", col="high_or_low_co2", shape="high_or_low_co2", size=3.5, alpha=0.85, 
+          ellipse = F, star.plot = T) +
+  theme_minimal() + ggtitle("Global methylation PC1xPC2") + 
+  xlab(paste("PC1 (", 100*round(pc.percent.meth.dmls[1], digits = 3), "%)", sep="")) + 
+  ylab(paste("PC2 (", 100*round(pc.percent.meth.dmls[2], digits = 3), "%)", sep="")) + 
+  theme(legend.position = "right", legend.text=element_text(size=8), legend.title=element_text(size=9)) + 
+  scale_color_manual(name="Treatment", 
+                     values=c("L"="dodgerblue3",
+                              "H"="firebrick3"),
+                     labels=c("L"="Control",
+                              "H"="High pCO2")) +
+  scale_shape_manual(guide="none", values=c("L"=19, "H"=17)) +
+  guides(fill="none", colour = guide_legend(override.aes = list(size=3.5, linetype="blank", shape=c(19, 17))))
+```
+
+
 
 ### Take the DMLs to a bed
 
@@ -917,14 +1039,14 @@ dml25 <- myDiff25p %>% getData() %>%
   mutate(start = start-1, end = end+1) %>% 
   dplyr::select(chr, start, end, meth.diff)
 
-write_delim(dml25, "../results/methylkit/dml25.bed",  delim = '\t', col_names = TRUE) 
+write_delim(dml25, "../results/methylkit/dml25.bed",  delim = '\t', col_names = F)
 write_delim(dml25, "../results/methylkit/dml25_forIGV.bed",  delim = '\t', col_names = FALSE) #no column names for IGV
 save(dml25, file="../results/methylkit/dml25")
 #load(file="../results/methylkit/dml25") #load dml25 if needed
 
 # Write out bedfile for all loci fed into DML analysis, to use as background for enrichment 
 mydiff.all <-  mutate(getData(myDiff), start = start -1, end = end + 1) %>% dplyr::select(chr, start, end, meth.diff) %>% mutate_if(is.numeric, as.integer)
-write_delim(mydiff.all, "../results/methylkit/mydiff-all.bed",  delim = '\t', col_names = TRUE)
+write_delim(mydiff.all, "../results/methylkit/mydiff-all.bed",  delim = '\t', col_names = FALSE)
 save(mydiff.all, file="../results/methylkit/mydiff.all")
 #load(file="../results/methylkit/mydiff.all")
 ```
@@ -982,6 +1104,9 @@ perc.methDMLs= percMethylation(dml25_counts, rowids=T) #create a percent methyla
 # save count and percent objects to be used in subsequent notebook 
 save(dml25_counts, file = "../results/methylkit/dml25_counts")
 save(perc.methDMLs, file="../results/methylkit/perc.methDMLs")
+
+#load(file = "../results/methylkit/dml25_counts")
+#load(file="../results/methylkit/perc.methDMLs")
 ```
 ## permANOVA and dispersion test, % methylation by treatment 
 
@@ -1180,7 +1305,7 @@ DML.ratios <- meth_unite_10x_reshaped %>%
 
 nrow(DML.ratios)==nrow(dml25_counts_unique) #confirm same # loci; should=TRUE
 save(DML.ratios, file="../results/methylkit/DML.ratios")
-#load(file="../analyses/methykit/DML.ratios")
+#load(file="../results/methylkit/DML.ratios")
 
 # For all loci, calculate mean and sd percent methylation across samples by  treatment 
 DML.calcs <- meth_unite_10x_reshaped %>% 
@@ -1192,6 +1317,7 @@ DML.calcs <- meth_unite_10x_reshaped %>%
   filter(chr %in% c(DML.ratios$chr) & 
            start %in% c(DML.ratios$start))
 ```
+
 Interesting! DMLs on average have lower % methylation in the high pCO2 treatment 
 
 ```{r}
@@ -1262,11 +1388,10 @@ theme_minimal() + xlab("Mean methylation (within treatment)") +
   ggtitle("% Methylation distribution for DMLs by treatment")
 ```
 
-
 ### Heatmap
 
 ```{r}
-#load("../analyses/methylation-filtered/R-objects/meth_unite_10x_reshaped")
+#load(file="../results/methylkit/meth_unite_10x_reshaped")
 meth_unite_10x_reshaped %>% dplyr::select(sample, treatment) %>% distinct()
 
 DMLs_heatmap <- 
@@ -1291,6 +1416,790 @@ ggplot(DMLs_heatmap, aes(sample, chr_start, fill= percMeth)) + xlab("Sample") + 
 
 sample.info[c("high_or_low_co2", "sample_seq", "tank")]
 ```
+
+### Functional analysis of DMLs 
+
+Identify genes that contain DMLs and run DAVID enrichment analysis
+
+#### Load genesas results 
+
+```{r}
+require(janitor)
+gensas <- read_delim(file = "../results/GenSAS/Metacarcinus-magister-v1.0.a1.6448195bde6ca-publish.genes.gff3", delim = "\t", skip = 5, 
+                           col_names = c("seqname", "source", "feature", "start", "end", "score", "strand", "frame", "attribute")) %>%
+  separate(attribute, sep = ";", remove=F, into = c("ID","Name","Parent")) %>%
+  mutate_at(vars(start, end, score), as.numeric) %>%
+  mutate_at(vars(feature), as.factor) %>%
+  
+#  group_by(SeqID, Start, End) %>% dplyr::slice(which.min(evalue))  %>% # where multiple blast hits for same gene, select one with minimum e-value
+    mutate(ID=gsub("ID\\=", "", ID),
+           Name=gsub("Name\\=", "", Name),
+           Parent=gsub("Parent\\=", "", Parent)) %>%
+  clean_names()
+
+gensas.genes <- gensas %>% filter(feature=="gene")
+
+gensas.blast <- read_delim(file = "../results/GenSAS/Metacarcinus-magister-v1.0.a1.640639c029cb6-blast_functional.tab", delim = "\t", skip = 12, col_names = T) %>%
+  clean_names() %>%
+  mutate(name=gsub("\\.m01", "", name)) %>%
+  left_join(gensas.genes %>% dplyr::select(seqname, id, name), by="name") 
+```
+
+```{r}
+# All DMLs 
+DML.ratios
+
+# Loci that are hypo-methylated in high pCO2 treatment
+DML.ratios %>%
+  filter(ratio_H.L<1)
+
+# Loci that are hyper-methylated in high pCO2 treatment
+DML.ratios %>%
+  filter(ratio_H.L>1)
+```
+
+Use `bedtools` to identify where DMLs intersect with genes and gene-flanking regions 
+
+This was done outside of RStudio on Sedna using the script [bedtools-feature-files.sh](../scripts/bedtools-feature-files.sh)
+
+```{r}
+dml25 %>% head()
+```
+
+Read in results to examine genes and gene-flanking regions containing DMLs 
+
+```{r}
+## This code only reads in results for DMLs within genes 
+# dml25.annot <- 
+# read_delim("../results/methylkit/dml25-genes.tab", delim = "\t", col_names = c("chr", "start_dml", "end_dml", "meth.diff", names(gensas.genes))) %>%
+#   dplyr::select(-seqname) %>%
+#   separate(attribute, sep = ";", into = c("ID", "Name", "Parent")) %>%
+#   mutate(ID=str_remove_all(ID, "ID="), Name=str_remove_all(Name, "Name="), Parent=str_remove_all(Parent, "Parent=")) %>%
+#   dplyr::rename("start_gene"="start", "end_gene"="end")
+
+# Read in results for DMLs within genes and gene-flanking regions 
+dml25.annot <- vector(mode = "list", length = 3)
+names(dml25.annot) <- c("in-genes", "2kb-up-genes", "2kb-down-genes")
+
+for (i in 1:3) {
+  dml25.annot[[i]] <- 
+    read_delim(file = paste("../results/methylkit/dml25-", names(dml25.annot)[i], ".tab", sep=""), delim = "\t", 
+               col_names = c("chr", "start_dml", "end_dml", "meth.diff", names(gensas.genes)))
+}
+
+dml25.annot <- bind_rows(dml25.annot, .id = "location")  %>%
+  dplyr::select(-seqname) %>%
+  separate(attribute, sep = ";", into = c("ID", "Name", "Parent")) %>%
+  mutate(ID=str_remove_all(ID, "ID="), Name=str_remove_all(Name, "Name="), Parent=str_remove_all(Parent, "Parent="), location=as.factor(location)) %>%
+  dplyr::rename("start_feature"="start", "end_feature"="end") 
+```
+
+```{r}
+# If a DML is inside a gene, that takes precedent over DMLs that might be up/downstream of other genes. 
+# Then, for DMLs that overlap with multiple up/downstream flanking regions, identify the coordinate nearest the gene 
+
+## Here, identify DMLs that overlap with both genes and up/down which I will for sure keep only the genes
+keep.feature1 <- dml25.annot %>% 
+  filter(feature=="gene") %>% 
+  group_by(chr, start_dml, end_dml) %>% filter(n()>1) %>%
+  arrange(chr, start_dml, end_dml) %>%
+  left_join(gensas.blast, by = c("ID"="id")) %>%
+  #dplyr::select(ID, location, start_dml, end_dml, start_feature, end_feature, accession, e_value) %>%
+  group_by(chr, start_dml, end_dml) %>%
+  filter(location=="in-genes") %>%
+  mutate(locus=start_dml+1) %>%
+  mutate(dml=paste(chr, locus, sep = "."))
+  
+## Now identify which entries to remove because the DML already overlaps with a gene 
+remove.feature1 <- dml25.annot %>% 
+  filter(feature=="gene") %>% 
+  group_by(chr, start_dml, end_dml) %>% filter(n()>1) %>%
+  filter(location!="in-genes") %>%
+  mutate(locus=start_dml+1) %>%
+  mutate(dml=paste(chr, locus, sep = ".")) %>%
+  filter(dml %in% keep.feature1$dml) %>%
+  mutate(dml.feature=paste(chr,start_dml,start_feature, sep = "."))
+
+# ## Now identify DMLs that overlap with more than one up/downstream feature, and keep one nearest the gene  
+keep.feature2 <- dml25.annot %>% filter(feature=="gene") %>% 
+  group_by(chr, start_dml, end_dml) %>% filter(n()>1) %>%  # find DMLs overlapping multiple features
+  filter(location!="in-genes") %>% # don't keep those overlapping gene bodies
+  mutate(locus=start_dml+1) %>% mutate(dml=paste(chr, locus, sep = ".")) %>% # calculate dml locus, then create dml ID from chromosome + locus 
+  filter(dml %!in% keep.feature1$dml) %>% # remove all DMLs that we've already dealt with above (i.e. they overlap gene bodies + flanking regions, so keeping just gene body feature)
+  arrange(dml) %>% # arrange by DML so we can see that they overlap multiple features 
+  # rename("start_feature"="start_feature", "end_feature"="end_gene") %>%  # clarify that the start/stop location in current dataframe refers to flanking features 
+  left_join(gensas.genes %>% dplyr::select(name, start, end) %>%  rename(start_gene=start, end_gene=end), by = c("Name"="name")) %>% #add gene start & stop 
+  mutate(dist_to_gene=case_when(  #for each DML, calculate the distance from the 1) start of gene, for upstream flanking features, and 2) end of  gene, for downstream flanking features 
+    location=="2kb-up-genes" ~ start_gene-locus,
+    location=="2kb-down-genes" ~ locus-end_gene)) %>%
+  dplyr::select(Name, start_gene, end_gene, start_feature, end_feature, locus, dist_to_gene, everything()) %>% # reorganize columns to double check that this all worked! 
+  group_by(dml) %>% slice_min(dist_to_gene) %>% # for DMLs overlapping multiple flanking regions, find one closest to the gene! 
+  mutate(dml.feature=paste(chr,start_dml,start_feature, sep = "."))
+
+## Now identify which entries to remove because the DML overlaps with >1 flanking region (remove feature with DML furthest from the gene) 
+remove.feature2 <- dml25.annot %>% filter(feature=="gene") %>% 
+  group_by(chr, start_dml, end_dml) %>% filter(n()>1) %>%  # find DMLs overlapping multiple features
+  filter(location!="in-genes") %>% # don't keep those overlapping gene bodies
+  mutate(locus=start_dml+1) %>% mutate(dml=paste(chr, locus, sep = ".")) %>% # calculate dml locus, then create dml ID from chromosome + locus 
+  filter(dml %!in% keep.feature1$dml) %>% # remove all DMLs that we've already dealt with above (i.e. they overlap gene bodies + flanking regions, so keeping just gene body feature)
+  arrange(dml) %>% # arrange by DML so we can see that they overlap multiple features 
+  # rename("start_feature"="start_feature", "end_feature"="end_gene") %>%  # clarify that the start/stop location in current dataframe refers to flanking features 
+  left_join(gensas.genes %>% dplyr::select(name, start, end) %>%  rename(start_gene=start, end_gene=end), by = c("Name"="name")) %>% #add gene start & stop 
+  mutate(dist_to_gene=case_when(  #for each DML, calculate the distance from the 1) start of gene, for upstream flanking features, and 2) end of  gene, for downstream flanking features 
+    location=="2kb-up-genes" ~ start_gene-locus,
+    location=="2kb-down-genes" ~ locus-end_gene)) %>%
+  dplyr::select(Name, start_gene, end_gene, start_feature, end_feature, locus, dist_to_gene, everything()) %>% # reorganize columns to double check that this all worked! 
+  mutate(dml.feature=paste(chr,start_dml,start_feature, sep = ".")) %>%
+  filter(dml.feature %!in% keep.feature2$dml.feature)
+```
+
+FINAL dataframe with gene bodies & flanking regions containing DMLs, NO DUPLICATE DMLs
+
+```{r}
+(dml25.annot.filt <- dml25.annot %>% #filter(feature=="gene") %>% 
+  mutate(dml.feature=paste(chr,start_dml,start_feature, sep = ".")) %>%
+  filter(dml.feature %!in% c(remove.feature1$dml.feature, remove.feature2$dml.feature)) %>%
+ left_join(gensas.blast, by = c("Name"="name"))) #%>%
+
+  # group_by(chr, start_dml, end_dml) %>% filter(n()>1) %>%  # find DMLs overlapping multiple features
+  # mutate(locus=start_dml+1) %>% mutate(dml=paste(chr, locus, sep = ".")) %>% # calculate dml locus, then create dml ID from chromosome + locus
+  # arrange(dml)
+```
+
+
+
+
+How many DMLs overlap with features? 
+
+```{r}
+paste("DML's total: ", dml25.annot.filt %>% distinct(chr, start_dml, end_dml, .keep_all = T)  %>% nrow()) 
+paste("DML's in genes: ", dml25.annot.filt %>% filter(feature=="gene" & location=="in-genes") %>% distinct(chr, start_dml, end_dml, .keep_all = T)  %>% nrow()) 
+paste("DML's in mRNA: ", dml25.annot.filt %>% filter(feature=="mRNA") %>% distinct(chr, start_dml, end_dml, .keep_all = T)  %>% nrow())
+paste("DML's in exons: ", dml25.annot.filt %>% filter(feature=="exon") %>% distinct(chr, start_dml, end_dml, .keep_all = T) %>% nrow())
+paste("DML's in CDS: ", dml25.annot.filt %>% filter(feature=="CDS") %>% distinct(chr, start_dml, end_dml, .keep_all = T)  %>% nrow()) #exon/CDS same 
+paste("DML's 2kb upstream of genes: ", dml25.annot.filt %>% filter(feature=="gene" & location=="2kb-up-genes") %>% distinct(chr, start_dml, end_dml, .keep_all = T)  %>% nrow()) 
+paste("DML's 2kb downstream of genes: ", dml25.annot.filt %>% filter(feature=="gene" & location=="2kb-down-genes") %>% distinct(chr, start_dml, end_dml, .keep_all = T)  %>% nrow()) 
+```
+Read in results to examine genes and gene-flanking regions containing all examined CpG loci  
+
+```{r}
+all.meth.annot <- vector(mode = "list", length = 3)
+names(all.meth.annot) <- c("in-genes", "2kb-up-genes", "2kb-down-genes")
+
+for (i in 1:3) {
+  all.meth.annot[[i]] <- 
+    read_delim(file = paste("../results/methylkit/all-mbd-", names(all.meth.annot)[i], ".tab", sep=""), delim = "\t", 
+               col_names = c("chr", "start_dml", "end_dml", "meth.diff", names(gensas.genes)))
+}
+
+all.meth.annot <- bind_rows(all.meth.annot, .id = "location")  %>%
+  dplyr::select(-seqname) %>%
+  separate(attribute, sep = ";", into = c("ID", "Name", "Parent")) %>%
+  mutate(ID=str_remove_all(ID, "ID="), Name=str_remove_all(Name, "Name="), Parent=str_remove_all(Parent, "Parent="), location=as.factor(location)) %>%
+  dplyr::rename("start_feature"="start", "end_feature"="end")
+```
+```{r}
+# If a DML is inside a gene, that takes precedent over DMLs that might be up/downstream of other genes. 
+# Then, for DMLs that overlap with multiple up/downstream flanking regions, identify the coordinate nearest the gene 
+
+## Here, identify DMLs that overlap with both genes and up/down which I will for sure keep only the genes
+keep.feature1.all <- all.meth.annot %>% 
+  filter(feature=="gene") %>% 
+  group_by(chr, start_dml, end_dml) %>% filter(n()>1) %>%
+  arrange(chr, start_dml, end_dml) %>%
+  left_join(gensas.blast, by = c("ID"="id")) %>%
+  #dplyr::select(ID, location, start_dml, end_dml, start_feature, end_feature, accession, e_value) %>%
+  group_by(chr, start_dml, end_dml) %>%
+  filter(location=="in-genes") %>%
+  mutate(locus=start_dml+1) %>%
+  mutate(dml=paste(chr, locus, sep = "."))
+  
+## Now identify which entries to remove because the DML already overlaps with a gene 
+remove.feature1.all <- all.meth.annot %>% 
+  filter(feature=="gene") %>% 
+  group_by(chr, start_dml, end_dml) %>% filter(n()>1) %>%
+  filter(location!="in-genes") %>%
+  mutate(locus=start_dml+1) %>%
+  mutate(dml=paste(chr, locus, sep = ".")) %>%
+  filter(dml %in% keep.feature1$dml) %>%
+  mutate(dml.feature=paste(chr,start_dml,start_feature, sep = "."))
+
+# ## Now identify DMLs that overlap with more than one up/downstream feature, and keep one nearest the gene  
+keep.feature2.all <- all.meth.annot %>% filter(feature=="gene") %>% 
+  group_by(chr, start_dml, end_dml) %>% filter(n()>1) %>%  # find DMLs overlapping multiple features
+  filter(location!="in-genes") %>% # don't keep those overlapping gene bodies
+  mutate(locus=start_dml+1) %>% mutate(dml=paste(chr, locus, sep = ".")) %>% # calculate dml locus, then create dml ID from chromosome + locus 
+  filter(dml %!in% keep.feature1$dml) %>% # remove all DMLs that we've already dealt with above (i.e. they overlap gene bodies + flanking regions, so keeping just gene body feature)
+  arrange(dml) %>% # arrange by DML so we can see that they overlap multiple features 
+  # rename("start_feature"="start_feature", "end_feature"="end_gene") %>%  # clarify that the start/stop location in current dataframe refers to flanking features 
+  left_join(gensas.genes %>% dplyr::select(name, start, end) %>%  rename(start_gene=start, end_gene=end), by = c("Name"="name")) %>% #add gene start & stop 
+  mutate(dist_to_gene=case_when(  #for each DML, calculate the distance from the 1) start of gene, for upstream flanking features, and 2) end of  gene, for downstream flanking features 
+    location=="2kb-up-genes" ~ start_gene-locus,
+    location=="2kb-down-genes" ~ locus-end_gene)) %>%
+  dplyr::select(Name, start_gene, end_gene, start_feature, end_feature, locus, dist_to_gene, everything()) %>% # reorganize columns to double check that this all worked! 
+  group_by(dml) %>% slice_min(dist_to_gene) %>% # for DMLs overlapping multiple flanking regions, find one closest to the gene! 
+  mutate(dml.feature=paste(chr,start_dml,start_feature, sep = "."))
+
+## Now identify which entries to remove because the DML overlaps with >1 flanking region (remove feature with DML furthest from the gene) 
+remove.feature2.all <- all.meth.annot %>% filter(feature=="gene") %>% 
+  group_by(chr, start_dml, end_dml) %>% filter(n()>1) %>%  # find DMLs overlapping multiple features
+  filter(location!="in-genes") %>% # don't keep those overlapping gene bodies
+  mutate(locus=start_dml+1) %>% mutate(dml=paste(chr, locus, sep = ".")) %>% # calculate dml locus, then create dml ID from chromosome + locus 
+  filter(dml %!in% keep.feature1$dml) %>% # remove all DMLs that we've already dealt with above (i.e. they overlap gene bodies + flanking regions, so keeping just gene body feature)
+  arrange(dml) %>% # arrange by DML so we can see that they overlap multiple features 
+  # rename("start_feature"="start_feature", "end_feature"="end_gene") %>%  # clarify that the start/stop location in current dataframe refers to flanking features 
+  left_join(gensas.genes %>% dplyr::select(name, start, end) %>%  rename(start_gene=start, end_gene=end), by = c("Name"="name")) %>% #add gene start & stop 
+  mutate(dist_to_gene=case_when(  #for each DML, calculate the distance from the 1) start of gene, for upstream flanking features, and 2) end of  gene, for downstream flanking features 
+    location=="2kb-up-genes" ~ start_gene-locus,
+    location=="2kb-down-genes" ~ locus-end_gene)) %>%
+  dplyr::select(Name, start_gene, end_gene, start_feature, end_feature, locus, dist_to_gene, everything()) %>% # reorganize columns to double check that this all worked! 
+  mutate(dml.feature=paste(chr,start_dml,start_feature, sep = ".")) %>%
+  filter(dml.feature %!in% keep.feature2$dml.feature)
+
+# FINAL dataframe with gene bodies & flanking regions containing all examined CpG loci, NO DUPLICATE CPGS
+
+all.meth.annot.filt <- all.meth.annot %>% #filter(feature=="gene") %>% 
+  mutate(dml.feature=paste(chr,start_dml,start_feature, sep = ".")) %>%
+  filter(dml.feature %!in% c(remove.feature1.all$dml.feature, remove.feature2.all$dml.feature)) %>% 
+ left_join(gensas.blast, by = c("Name"="name")) #%>%
+
+  # group_by(chr, start_dml, end_dml) %>% filter(n()>1) %>%  # find DMLs overlapping multiple features
+  # mutate(locus=start_dml+1) %>% mutate(dml=paste(chr, locus, sep = ".")) %>% # calculate dml locus, then create dml ID from chromosome + locus
+  # arrange(dml)
+```
+
+
+
+```{r}
+paste("CpG's total: ", all.meth.annot %>% distinct(chr, start_dml, end_dml, .keep_all = T)  %>% nrow()) 
+paste("CpG's in genes: ", all.meth.annot %>% filter(feature=="gene" & location=="in-genes") %>% distinct(chr, start_dml, end_dml, .keep_all = T)  %>% nrow()) 
+paste("CpG's in mRNA: ", all.meth.annot %>% filter(feature=="mRNA") %>% distinct(chr, start_dml, end_dml, .keep_all = T)  %>% nrow())
+paste("CpG's in exons: ", all.meth.annot %>% filter(feature=="exon") %>% distinct(chr, start_dml, end_dml, .keep_all = T) %>% nrow())
+paste("CpG's in CDS: ", all.meth.annot %>% filter(feature=="CDS") %>% distinct(chr, start_dml, end_dml, .keep_all = T)  %>% nrow()) #exon/CDS same 
+paste("CpG's 2kb upstream of genes: ", all.meth.annot %>% filter(feature=="gene" & location=="2kb-up-genes") %>% distinct(chr, start_dml, end_dml, .keep_all = T)  %>% nrow()) 
+paste("CpG's 2kb downstream of genes: ", all.meth.annot %>% filter(feature=="gene" & location=="2kb-down-genes") %>% distinct(chr, start_dml, end_dml, .keep_all = T)  %>% nrow()) 
+```
+Summarize DML and CpG locations along gene features
+
+```{r}
+(features <- dml25.annot.filt %>% group_by(location, feature) %>%
+  summarize(DMLs=n()) %>% 
+  left_join(all.meth.annot.filt %>% group_by(location, feature) %>%
+  summarize(CpGs=n())) %>% ungroup() %>%
+  add_row(location="total", feature="any", 
+          DMLs=dml25.annot.filt %>% distinct(chr, start_dml, end_dml, .keep_all = T)  %>% nrow(), 
+          CpGs=all.meth.annot.filt %>% distinct(chr, start_dml, end_dml, .keep_all = T)  %>% nrow()) %>%
+  mutate(feature=case_when(
+  location=="2kb-down-genes" ~ "2kb-down-genes",
+  location=="2kb-up-genes" ~ "2kb-up-genes",
+  TRUE ~ feature)) %>%
+   mutate(DML.perc=DMLs/906, CpG.perc=CpGs/91225))
+```
+
+
+```{r}
+meth.chisq <- features %>% filter(feature %in% c("2kb-up-genes", "2kb-down-genes", "exon", "gene")) %>%
+  column_to_rownames("feature") %>% dplyr::select(CpGs, DMLs) %>% chisq.test() 
+
+meth.chisq #difference in overall distribution
+meth.chisq$observed %>% sum()
+meth.chisq$expected
+corrplot(meth.chisq$residuals, is.cor = FALSE, method="circle", cl.pos = 'n')
+```
+
+**Positive residuals are in blue.** Positive values in cells specify an attraction (positive association) between the corresponding row and column variables. 
+--> Upstream and downstream flanking regions are more likely to be methylated. 
+
+**Negative residuals are in red.** This implies a repulsion (negative association) between the corresponding row and column variables. 
+--> exons and genes less likely 
+
+### Examine the contribution of each genome feature to the chi-square value (in percentage) 
+
+The up- and down-stream flanking contribute most of the chi-square value 
+
+```{r}
+contrib <- 100*meth.chisq$residuals^2/meth.chisq$statistic
+round(contrib, 3) 
+corrplot(contrib, is.cor = F)
+```
+```{r}
+features %>% dplyr::select(feature, DML.perc, CpG.perc) %>%
+  pivot_longer(cols = c("DML.perc", "CpG.perc"), names_to = "analysis", values_to = "percent") %>%
+  filter(feature %in% c("2kb-down-genes", "2kb-up-genes", "gene", "exon")) %>%
+  mutate(percent2 = ifelse(analysis == "CpGs", percent*(-1), percent)) %>%
+  mutate(feature=fct_rev(feature), analysis=factor(analysis, ordered = T, levels=c("DML.perc", "CpG.perc"))) %>%
+
+ggplot(aes(x=feature, y=percent, fill=analysis, label=percent(percent, accuracy = 0.1))) +  #prettyNum(count, big.mark = ",")
+  geom_bar(stat="identity", position = "dodge", width = .5) +
+scale_fill_manual(name = NULL, labels = c("CpG.perc"="All analyzed loci", "DML.perc"="Differentially methylated loci"),
+                  values=c("gray40", "gray65")) +
+  ggtitle("% of DML's and all analyzed loci that overlap with gene features") +
+  labs(y="% of Loci", x=NULL) +
+  theme_minimal() + theme(legend.position ="bottom") + 
+    geom_text(aes(label=percent(percent, accuracy = 1)), 
+              position=position_dodge(width=0.5), vjust=-0.5, size=3) +
+  scale_x_discrete(
+    labels=c(gene="Gene", exon="Exon", `2kb-up-genes`="5' flanking\nregion (-2kb)", 
+             `2kb-down-genes`="3' flanking\nregion (+2kb)"))
+```
+
+How many genes contain DMLs?
+
+```{r}
+# 906 DMLs overlap with 650 distinct genes or gene-flanking regions
+dml25.annot.filt %>% 
+  filter(feature=="gene") %>% group_by(chr, start_dml, end_dml) %>%
+  arrange(chr, start_dml, end_dml) %>%
+  left_join(gensas.blast, by = c("Name"="name")) %>% ungroup() %>% 
+  dplyr::select(ID) %>% distinct() %>% nrow() #comment out this line to find unique genes 
+
+# 581 DMLs overlap with genes 
+(dml25.genes <- dml25.annot.filt %>% ungroup() %>%
+  filter(location=="in-genes", feature=="gene"))
+
+# 422 distinct genes 
+dml25.genes %>% ungroup() %>% dplyr::select(chr, start_feature, end_feature) %>% distinct() %>% nrow()
+
+# 245 distinct genes are annotated with Uniprot SPID
+dml25.genes %>% ungroup() %>% filter(!is.na(accession)) %>% dplyr::select(chr, start_feature, end_feature) %>% distinct() %>% nrow()
+```
+
+```{r}
+# 325 DMLs overlap with gene flanking regions 
+(dml25.flank.genes <- dml25.annot.filt %>% 
+  filter(location %in% c("2kb-up-genes", "2kb-down-genes"), feature=="gene"))
+
+# 271 distinct genes 
+dml25.flank.genes %>% dplyr::select(chr, start_feature, end_feature) %>% distinct() %>% nrow()
+
+# 93 genes are annotated with Uniprot SPID
+dml25.flank.genes  %>% filter(!is.na(accession)) %>% dplyr::select(chr, start_feature, end_feature) %>% distinct() %>% nrow()
+```
+How many genes have DMLs both in the gene and flanking the gene?
+
+```{r}
+# 45 distinct genes 
+dml25.genes %>% filter(ID %in% dml25.flank.genes$ID) %>% dplyr::select(ID) %>% distinct() %>% nrow()
+```
+
+NOTE: If more than one DML is located in a gene, that gene appears multiple times - once per DML 
+
+How many genes contain more than one DML? Answer: 94 genes contain a total of 253 DMLs (out of a total of 581 DMLs)
+
+```{r}
+dml25.genes %>% group_by(chr, start_feature, end_feature) %>% mutate(dupe=n()>1) %>% filter(dupe==TRUE) %>%
+  dplyr::select(chr, start_feature, end_feature) %>% distinct() %>% nrow()
+
+dml25.genes.multi <- 
+  dml25.genes %>% group_by(chr, start_feature, end_feature) %>% mutate(dupe=n()>1) %>% filter(dupe==TRUE)
+```
+
+How many gene-flanking regions contain more than one DML? Answer: 40 genes contain a total of 94 DMLs 
+
+```{r}
+dml25.flank.genes %>% group_by(chr, start_feature, end_feature) %>% mutate(dupe=n()>1) %>% filter(dupe==TRUE) %>%
+  dplyr::select(chr, start_feature, end_feature) %>% distinct() %>% nrow()
+
+dml25.flank.genes.multi <- 
+  dml25.flank.genes %>% group_by(chr, start_feature, end_feature) %>% mutate(dupe=n()>1) %>% filter(dupe==TRUE)
+
+# How many multi-DML upstream gene flanking regions? 
+dml25.flank.genes.multi %>% filter(location=="2kb-up-genes") #68 DMLs upstream genes 
+dml25.flank.genes.multi %>% filter(location=="2kb-up-genes") %>% dplyr::select(chr, start_feature, end_feature) %>% distinct() %>% nrow() # in 28 genes 
+
+# How many multi-DML downstream gene flanking regions? 
+dml25.flank.genes.multi %>% filter(location=="2kb-down-genes") #26 DMLs downstream genes 
+dml25.flank.genes.multi %>% filter(location=="2kb-down-genes") %>% dplyr::select(chr, start_feature, end_feature) %>% distinct() %>% nrow() # in 12 genes 
+```
+How many genes contain more than one DML in the greater gene area? 
+
+347 DMLs overlap with 134 genes that contain multiple DMLs 
+
+```{r}
+dml25.annot.filt %>% filter(feature=="gene") %>% group_by(chr, start_feature, end_feature) %>% 
+  mutate(dupe=n()>1) %>% filter(dupe==TRUE) %>% # 347 DMLs 
+  dplyr::select(chr, start_feature, end_feature) %>% distinct() %>% nrow() # in 134 genes 
+
+dml25.gene.regions.multi <- 
+  dml25.annot.filt %>% filter(feature=="gene") %>% group_by(chr, start_feature, end_feature) %>% mutate(dupe=n()>1) %>% filter(dupe==TRUE)
+```
+
+Which gene regions (bodies + up/down) contain more than one DML? What do they do?
+
+```{r}
+dml25.annot.filt %>% filter(feature=="gene") %>% group_by(Name, chr, start_feature, end_feature) %>% tally() %>%
+  arrange(desc(n)) %>% filter(n>1) %>%
+  left_join(dml25.annot.filt %>% filter(feature=="gene") %>% dplyr::select(Name, chr, start_feature, end_feature, accession, match_id, e_value)) %>%
+  distinct() %>% arrange(chr, start_feature)
+```
+
+Which gene bodies contain more than one DML? What do they do?
+
+```{r}
+dml25.genes %>% group_by(Name, chr, start_feature, end_feature) %>% tally() %>%
+  arrange(desc(n)) %>% filter(n>1) %>%
+  left_join(dml25.genes %>% dplyr::select(Name, chr, start_feature, end_feature, accession, match_id, e_value)) %>%
+  distinct() %>% arrange(chr, start_feature)
+```
+
+Which upstream gene regions contain more than one DML? What do they do?
+
+```{r}
+dml25.flank.genes.up.annot <- dml25.flank.genes %>% filter(location=="2kb-up-genes") %>% 
+  group_by(chr, start_feature, end_feature) %>% tally() %>%
+  arrange(desc(n)) %>% filter(n>1) %>%
+  left_join(dml25.flank.genes %>% dplyr::select(chr, start_feature, end_feature, accession, match_id, e_value, id)) %>%
+  distinct() %>% ungroup() %>%
+  dplyr::select(accession) %>%  na.omit() %>% unlist() %>% as.vector() #%>% write_clip()
+```
+Which downstream gene regions contain more than one DML? What do they do?
+
+```{r}
+dml25.flank.genes.down.annot <- dml25.flank.genes %>% filter(location=="2kb-down-genes") %>% 
+  group_by(chr, start_feature, end_feature) %>% tally() %>%
+  arrange(desc(n)) %>% filter(n>1) %>%
+  left_join(dml25.flank.genes %>% dplyr::select(chr, start_feature, end_feature, accession, match_id, e_value, id)) %>%
+  distinct() %>% ungroup() %>%
+  dplyr::select(accession) %>%  na.omit() %>% unlist() %>% as.vector() #%>% write_clip()
+```
+## Examine function of genes that contain more than 3 DMLs 
+
+Export Uniprot IDs for annotated genes with 2 or more DMLs and see what they do 
+
+414 DMLs within 158 genes, 77 with Uniprot IDs
+
+```{r}
+dml25.annot.filt %>% filter(feature=="gene") %>% group_by(Name) %>% tally() %>%
+  arrange(desc(n)) %>% filter(n>1) %>%
+  left_join(dml25.annot.filt %>% filter(feature=="gene") %>% dplyr::select(Name, accession, match_id, e_value)) %>%
+  distinct() %>% filter(n>1) %>%
+  filter(!is.na(accession)) %>% ungroup() %>%
+  dplyr::select(accession) %>%  na.omit() %>% unlist() %>% as.vector() %>% write_clip()
+```
+
+Export Uniprot IDs for annotated genes with 3 or more DMLs and see what they do 
+188 DMLs within 45 genes, 21 that are annotated
+
+```{r}
+dml25.annot.filt %>% filter(feature=="gene") %>% group_by(Name) %>% tally() %>%
+  arrange(desc(n)) %>% filter(n>1) %>%
+  left_join(dml25.annot.filt %>% filter(feature=="gene") %>% dplyr::select(Name, accession, match_id, e_value)) %>%
+  distinct() %>% filter(n>2) %>%
+  filter(!is.na(accession)) %>% ungroup() %>%
+  dplyr::select(accession) %>%  na.omit() %>% unlist() %>% as.vector() %>% write_clip()
+```
+
+Pasted the above list of Uniprot IDs into the Uniprot batch retrieval tool, and downloaded. Import and view results 
+
+```{r}
+# Import Uniprot details for genes containing multiple DMLs and generate wordclouds
+
+#file <- "uniprot-multi-dml-genes_2plus.tsv" #for 2+ DMLs per gene 
+file <- "uniprot-multi-dml-genes_3plus.tsv" #for 3+ DMLs per gene 
+
+# Word cloud with Uniprot Keywords
+read_delim(file = paste("../results/methylkit/", file, sep=""), delim = "\t") %>% clean_names() %>%
+  dplyr::select(keywords) %>% na.omit() %>% unlist() %>% as.vector() %>% 
+#  gsub("\\[[^\\]]*\\]", "", ., perl=TRUE) %>%
+#  gsub("process", "", ., perl=TRUE) %>% #get rid of word "process" since it's in everything
+  wordcloud(min.freq = 2, random.order = F, random.color = F, colors = brewer.pal(2, "Dark2"))
+
+# Word cloud with GO Biological Processes
+tiff(filename = "../results/methylkit/wordcloud-3DML-GO-BP.tiff", width = 9, height = 9, units = "in", res=500)
+read_delim(file = paste("../results/methylkit/", file, sep=""), delim = "\t") %>% clean_names() %>%
+  dplyr::select(gene_ontology_biological_process) %>% na.omit() %>% unlist() %>% as.vector() %>% 
+  gsub("\\[[^\\]]*\\]", "", ., perl=TRUE) %>%
+  gsub("process", "", ., perl=TRUE) %>% #get rid of word "process" since it's in everything
+  wordcloud(min.freq = 2, random.order = F, random.color = F, colors = brewer.pal(2, "Dark2"))
+dev.off()
+
+# Word cloud with GO Molecular Function
+read_delim(file = paste("../results/methylkit/", file, sep=""), delim = "\t") %>% clean_names() %>%
+  dplyr::select(gene_ontology_molecular_function) %>% na.omit() %>% unlist() %>% as.vector() %>% 
+  gsub("\\[[^\\]]*\\]", "", ., perl=TRUE) %>%
+  gsub("process", "", ., perl=TRUE) %>% #get rid of word "process" since it's in everything
+  wordcloud(min.freq = 2, random.order = F, random.color = F, colors = brewer.pal(2, "Dark2"))
+
+# Word cloud with GO Cellular Componenet
+read_delim(file = paste("../results/methylkit/", file, sep=""), delim = "\t") %>% clean_names() %>%
+  dplyr::select(gene_ontology_cellular_component) %>% na.omit() %>% unlist() %>% as.vector() %>% 
+  gsub("\\[[^\\]]*\\]", "", ., perl=TRUE) %>%
+  gsub("process", "", ., perl=TRUE) %>% #get rid of word "process" since it's in everything
+  wordcloud(min.freq = 2, random.order = F, random.color = F, colors = brewer.pal(2, "Dark2"))
+```
+
+Heatmap with DMLs that are contained within multi-DML genes 
+
+```{r}
+#ggplotly(
+ggplot(
+  # Filter DMLs for those that are contained within multi-DML genes 
+  DMLs_heatmap %>% mutate(locus=paste(chr, ".", start, sep = "")) %>% 
+  filter(locus %in% 
+           (dml25.gene.regions.multi %>% mutate(locus=paste(chr, ".", start_dml+1, sep = "")))$locus) %>%
+    # Sort loci by the ratio of mean meth in H:L CO2 (groups hypo- and hyper- methylated loci together)
+    left_join(DML.ratios %>% mutate(locus=paste(chr, ".", start, sep = "")) %>% dplyr::select(locus, ratio_H.L),
+              by="locus") %>% 
+    arrange(ratio_H.L) %>% 
+    # lock in locus order 
+    mutate(chr_start=factor(chr_start, ordered = T)), 
+  
+  aes(sample, chr_start, fill= percMeth)) + 
+  xlab("Sample") + geom_tile(na.rm = T) +
+  #scale_y_discrete(limits=(DML.ratios[order(DML.ratios$ratio_H.L),]$chr_start)) + 
+  #scale_fill_viridis(discrete=FALSE) 
+  theme(axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) + 
+  scale_fill_distiller(palette = "YlGnBu", direction = 1) #)
+  #scale_fill_gradient(low="gray5", high="white")
+```
+```{r}
+DML.ratios
+```
+
+Create figure showing multi-DML genes
+
+```{r}
+test <- 
+#  dml25.genes %>%  filter(Name %in% dml25.genes.multi$Name) %>%  right_join(dml25.genes %>%  #use DMLs in gene bodies only 
+  dml25.annot.filt %>% filter(feature=="gene") %>%  filter(Name %in% dml25.gene.regions.multi$Name) %>% right_join(dml25.annot.filt %>% filter(feature=="gene") %>% #use DMLs in gene bodies + flanking regions  
+    group_by(Name) %>% tally() %>% arrange(desc(n)) %>% 
+               filter(n>1)) %>% #here you can filter for the number of DMLs in a gene
+  arrange(n) %>% mutate(Name=factor(Name, ordered = T)) %>%
+  mutate(n=factor(n, ordered = T)) %>% 
+  group_by(Name) %>% summarize(mean=mean(-1*meth.diff), sd=sd(-1*meth.diff))
+
+# holy crab this function is amazing! 
+#forcats:: fct_inorder()
+
+# IMPORTANT! meth.diff < 0 = loci where methylation rate is HIGHER in high pCO2 treatment 
+# To make this intuitive in the below figure, we must multiply meth.diff by -1 so negative numbers = less methylated in treatment 
+
+ggplotly(
+#  dml25.genes %>% filter(Name %in% dml25.genes.multi$Name) %>% right_join(dml25.genes %>%  #use DMLs in gene bodies only 
+  dml25.annot.filt %>% filter(feature=="gene") %>% filter(Name %in% dml25.gene.regions.multi$Name) %>% right_join(dml25.annot.filt %>% filter(feature=="gene") %>%   #use DMLs in gene bodies + flanking regions
+                                      group_by(Name) %>% tally() %>% arrange(desc(n)) %>% 
+               filter(n>1)) %>% #here you can filter for the number of DMLs in a gene
+  left_join(test) %>% filter(!is.na(location)) %>% droplevels("location") %>%
+  arrange(n, mean) %>% mutate(Name=factor(Name, ordered = T)) %>%
+  mutate(n=factor(n, ordered = T)) %>%
+  
+  ggplot(aes(x=fct_inorder(Name), y=-1*meth.diff, color=n, shape=fct_rev(location), label=accession)) + 
+    geom_point(size=4, alpha=0.6) +
+  coord_flip() + theme_minimal() + 
+  scale_colour_brewer(palette = "Dark2") + 
+  theme(axis.text.y = element_blank()) + 
+  guides(colour = guide_legend(reverse=T, title="Number of\nDMLs in gene", order = 1), 
+         shape = guide_legend(title="Location of DML")) + 
+  scale_shape_discrete(labels=c("in-genes"="Gene bodies", "2kb-up-genes"="5' (upstream)", "2kb-down-genes"="3' (downstream)")) + 
+  xlab("Genes") + 
+  ylab("Methylation difference (%)\nbetween pCO2 treatments") +
+  stat_summary(fun.data = "mean_sdl", fun.args=list(mult=1), geom="crossbar", width=0.2), 
+  tooltip=c("x", "y", "label") 
+  #ggplot2::annotate("text", x = c(60, 52), y=c(-55, 60), label = c("Lower methylation in\nOA crab", "Higher methylation in\nOA crab"), size=3, color="gray40")
+)
+```
+
+
+```{r}
+# all.annot <- 
+# read_delim("../results/methylkit/all-mbd-genes.tab", delim = "\t", col_names = c("chr", "start_dml", "end_dml", "meth.diff", names(gensas.genes))) %>%
+#   dplyr::select(-seqname) %>%
+#   separate(attribute, sep = ";", into = c("ID", "Name", "Parent")) %>%
+#   mutate(ID=str_remove_all(ID, "ID="), Name=str_remove_all(Name, "Name="), Parent=str_remove_all(Parent, "Parent=")) %>%
+#   rename("start"="start_feature", "end"="end_feature")
+# 
+# # 60,199 genes contain an MBD locus that we analyzed 
+# all.genes <- all.annot %>% filter(feature=="gene") %>%
+#   left_join(gensas.blast, by = c("Name"="name"))
+
+# 84,433 CpG loci 
+all.cpg <- all.meth.annot.filt %>% filter(feature=="gene") %>% 
+  rename("start_cpg"="start_dml", "end_cpg"="end_dml")
+
+# Aligned to 4,539 genes
+all.genes <- all.cpg %>% dplyr::select(Name, accession) %>% distinct()
+
+# 1,969 of those are annotated with a SPID
+all.genes %>% filter(!is.na(accession)) 
+```
+
+DAVID Enrichment analysis
+
+```{r}
+DMLs.4David <- list(
+  
+  # All DMLs that map to Uniprot SPIDs
+  "all-dmls" = 
+      dml25.annot.filt %>% filter(feature=="gene") %>%  
+      dplyr::select(Name, accession) %>% distinct() %>%
+      dplyr::select(accession) %>% filter(!is.na(accession)) %>%
+      na.omit() %>% unlist() %>% as.vector(),
+  
+  # Gene-body DMLs
+  "gene-bodies" = 
+      dml25.annot.filt %>% filter(feature=="gene") %>%  
+      filter(location=="in-genes") %>% 
+      dplyr::select(Name, accession) %>% distinct() %>%
+      dplyr::select(accession) %>% filter(!is.na(accession)) %>%
+      na.omit() %>% unlist() %>% as.vector(),
+
+  # 5' "upstream" DMLs
+  "upstream" = 
+      dml25.annot.filt %>% filter(feature=="gene") %>%  
+      filter(location=="2kb-up-genes") %>% 
+      dplyr::select(Name, accession) %>% distinct() %>%
+      dplyr::select(accession) %>% filter(!is.na(accession)) %>%
+      na.omit() %>% unlist() %>% as.vector(),
+
+  # 3' "downstream" DMLs
+  "downstream" = 
+      dml25.annot.filt %>% filter(feature=="gene") %>%  
+      filter(location=="2kb-down-genes") %>% 
+      dplyr::select(Name, accession) %>% distinct() %>%
+      dplyr::select(accession) %>% filter(!is.na(accession)) %>%
+      na.omit() %>% unlist() %>% as.vector(),
+
+  # Gene regions with 2+ DMLs 
+  "multi_2plus" = 
+    dml25.annot.filt %>% filter(feature=="gene") %>%
+    group_by(Name) %>% tally() %>%
+    arrange(desc(n)) %>%
+    left_join(dml25.annot.filt %>% filter(feature=="gene") %>% dplyr::select(Name, accession, match_id, e_value)) %>%
+    distinct() %>% 
+    filter(n>1) %>% # use genes with 2+ DMLs
+    filter(!is.na(accession)) %>% ungroup() %>%
+    dplyr::select(accession) %>%  na.omit() %>% unlist() %>% as.vector(),
+
+    # Gene regions with 3+ DMLs 
+    "multi_3plus" = 
+      dml25.annot.filt %>% filter(feature=="gene") %>%
+      group_by(Name) %>% tally() %>%
+      arrange(desc(n)) %>%
+      left_join(dml25.annot.filt %>% filter(feature=="gene") %>% dplyr::select(Name, accession, match_id, e_value)) %>%
+      distinct() %>% 
+      filter(n>2) %>% # use genes with 3+ DMLs
+      filter(!is.na(accession)) %>% ungroup() %>%
+      dplyr::select(accession) %>%  na.omit() %>% unlist() %>% as.vector()
+
+  ) 
+
+# Write tab-delimited file with each column containing Uniprot IDs for each set of DEGs 
+write_delim(x = plyr::ldply(DMLs.4David, rbind) %>% t() %>% as.data.frame(), delim = "\t", col_names = F, na="", 
+            file = "../results/methylkit/DMLs-4David.txt")
+
+
+# All Analyzed loci 
+all.genes %>% dplyr::select(Name, accession) %>% distinct() %>%
+  filter(!is.na(accession)) %>%
+  dplyr::select(accession) %>% unlist() %>% as.vector() %>% write_clip()
+```
+
+Import DAVID results 
+
+```{r}
+filenames <- read_delim(file="../results/methylkit/DAVID_filenames.txt", delim = "\t", col_names = c("filename", "gene_set"))
+file_list <- vector(mode = "list", length = nrow(filenames))
+names(file_list) <- c(filenames$gene_set)
+
+for (i in 1:nrow(filenames)) {
+    file_list[[i]] <- data.frame(read_delim(file=paste("../results/methylkit/", filenames[i,"filename"], sep=""), delim = "\t"))}
+
+david <- bind_rows(file_list, .id = "gene_set") %>% clean_names() %>%  # Bind dataframe for each gene_set together
+    #filter(category=="GOTERM_BP_DIRECT") %>%
+    #filter(p_value<0.05) %>%
+    dplyr::rename(percent=x) %>%
+    separate(term, into = c("term", "process"), sep = "~") %>%
+    mutate(gene_set=factor(gene_set)) %>% 
+  tidyr::complete(gene_set, category) # add rows for gene_sets that are missing from dataframe
+```
+
+```{r}
+
+david %>% 
+#  filter(gene_set != "multi-dmls_3plus") %>%
+  #filter(count>=3) %>% 
+#  filter(p_value<0.05) %>%
+#  filter(category=="GOTERM_BP_DIRECT") %>% 
+#  filter(category=="GOTERM_MF_DIRECT") %>% 
+#  filter(category=="GOTERM_CC_DIRECT") %>% 
+  filter(category=="UP_KW_BIOLOGICAL_PROCESS") %>%
+
+  group_by(gene_set, genes, count) %>%
+  dplyr::summarise(p_value=min(p_value)) %>% distinct() %>% ungroup() %>% #for rows with duplicate grouping variabes, select one with lowest p-value
+  left_join(
+    david %>% filter(category=="UP_KW_BIOLOGICAL_PROCESS") %>% 
+              dplyr::select(gene_set, category, term, process, count, percent, p_value, fold_enrichment, fdr, genes), 
+            by = c("gene_set", "genes", "p_value", "count")) %>%  #re-add data
+#  ungroup() %>% arrange(stress, response, p_value) %>% group_by(stress, response) %>% dplyr::slice(1:15) %>% # to reduce dataset if too large
+
+  ungroup() %>% arrange(gene_set, p_value) %>%
+  mutate(gene_set=factor(gene_set, ordered = T, 
+                         levels=c("all-dmls", "multi-dmls_2plus", "multi-dmls_3plus", "gene-bodies", "upstream", "downstream"))) %>%
+  mutate(process = factor(process, rev(unique(process)), ordered = TRUE)) %>%
+
+ggplot(aes(y = process, x=gene_set, col=gene_set)) + 
+  geom_point(alpha=0.65, aes(size=-log10(p_value))) + #size=count,  alpha=p_value, 
+ facet_wrap(~category,scales="free", nrow = 2) +
+ scale_color_manual(name="Gene Set",
+                     values=c("all-dmls"="#1b9e77", "gene-bodies"="#d95f02", "multi-dmls_2plus"="#7570b3", 
+                              "multi-dmls_3plus"="#e7298a", "upstream"="#66a61e", "downstream"="#e6ab02"),
+                    labels=c("all-dmls"="Genes with ≥1 DMLs", 
+                             "gene-bodies"="Gene-body DMLs", 
+                             "multi-dmls_2plus"="Genes with ≥2 DMLs", 
+                             "multi-dmls_3plus"="Genes with ≥3 DMLs", 
+                             "upstream"="5'-region DMLs", 
+                             "downstream"="3'-region DMLs"),
+             guide = guide_legend(override.aes = list(size=5))) +
+  scale_size("-Log10 P-value", range = c(2,8), #breaks = c(2, 5, 10),
+             guide = guide_legend(override.aes = list(col="gray50"))) +
+  scale_x_discrete(drop=T) + #Do drop empty factors for temperature contrasts
+  theme_cleveland() + 
+  theme(
+        legend.position = "right", 
+        axis.text.x=element_blank(),
+        axis.title.x=element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y=element_text(size=7.25), 
+        plot.title = element_text(size=7),
+        legend.text=element_text(size=7), 
+        legend.title = element_text(size=7),
+        strip.background = element_blank(),
+        strip.text.x = element_blank()) +
+#  ggtitle("Enriched Biological Processes")
+#  ggtitle("Enriched Molecular Functions")
+#  ggtitle("Enriched Cellular Componenets")
+  ggtitle("Enriched Biological Processes")
+
+```
+
+Export Uniprot IDs for annotated genes with multiple flanking DMLs and see what they do 
+
+```{r}
+dml25.flank.genes %>% group_by(ID, location) %>% tally() %>%
+  arrange(desc(n)) %>% filter(n>1) %>%
+  left_join(dml25.flank.genes %>% dplyr::select(ID, accession, match_id, e_value, id)) %>%
+  distinct() %>% filter(n>1) %>%
+  filter(!is.na(accession)) %>% ungroup() %>%
+  dplyr::select(accession) %>%  na.omit() %>% unlist() %>% as.vector() %>% write_clip()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ### Alignment to mitochondrial DNA to estimate conversion rate 
 
 ```{r}
@@ -1413,6 +2322,8 @@ sample.info %>% dplyr::select(sample_seq, sample, high_or_low_co2, treatment, ta
 ```
 
 
+
+
 ## BONEYARD 
 
 Divergent Bar plot of DMLs 
@@ -1439,33 +2350,7 @@ Divergent Bar plot of DMLs
 # ggsave(filename = "../analyses/DMLs/DMLs-diff-barplot.pdf", width=7, height=5)
 ```
 
-### Extract correlation matrix (pearson) and distance matrix (manhattan) from the % methylated matrix
 
-FYI I checked that the correlation matrix in `getCorrelation` is derived from the percent methylated matrix. It is! 
-
-```{r}
-# cor.pears <- cor(perc.meth, method="pearson") # create pearson correlation matrix. 
-# dist.manhat <- dist(t(perc.meth), method = "manhattan", diag = T, upper = F)
-# dist.manhat.df <- reshape2::melt(as.matrix(dist.manhat), varnames = c("row", "col"))
-# 
-# cor.pears.DMLs <- cor(perc.methDMLs, method="pearson") 
-# dist.manhat.DMLs <- dist(t(perc.methDMLs), method = "manhattan", diag = T, upper = F) 
-# dist.manhat.DMLs.df <- reshape2::melt(as.matrix(dist.manhat.DMLs), varnames = c("row", "col"))
-```
-
-### Read in sample number key, merge with distance matrix dataframes
-
-```{r}
-#key <- read.csv(here::here("data", "sample-key.csv"))
-
-# dist.manhat.df <- merge(x=merge(x=dist.manhat.df, y=key, by.x="row", by.y="MBD.FILENAME"), y=key, by.x="col", by.y="MBD.FILENAME")
-# colnames(dist.manhat.df) <- c("SeqNum.row", "SeqNum.col", "dist.manh", "SampNum.row", "SampNum.col")
-# write.csv(dist.manhat.df, file=here::here("analyses", "methylation-filtered", "dist.manhat.csv"), row.names=FALSE) 
-# 
-# dist.manhat.DMLs.df <- merge(x=merge(x=dist.manhat.DMLs.df, y=key, by.x="row", by.y="MBD.FILENAME"), y=key, by.x="col", by.y="MBD.FILENAME")
-# colnames(dist.manhat.DMLs.df) <- c("SeqNum.row", "SeqNum.col", "dist.manh", "SampNum.row", "SampNum.col")
-# write.csv(dist.manhat.DMLs.df, file=here::here("analyses", "methylation-filtered", "dist.manhat.DMLs.csv"), row.names=FALSE)
-```
 
 
 ### Principal Component Analyses, DMLs only 
@@ -1518,7 +2403,6 @@ FYI I checked that the correlation matrix in `getCorrelation` is derived from th
 # 
 # save(PCA.figure, file="../analyses/DMLs/R-objects/PCA.figure")
 ```
-
 
 OTHER POSSIBLE ANALYSIS OPTIONS
 - randomize which samples are "Treatment" and run 10 permutations to see now many loci are DMLs then 

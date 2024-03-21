@@ -1,0 +1,400 @@
+---
+title: "Integration"
+output: html_document
+date: "2024-03-05"
+---
+
+By any chance, are any annotated genes with DMLs and DEGs the same? 
+
+```{r}
+a <- annot %>% 
+    dplyr::select(-transcript_id) %>% distinct(number_gene_id, .keep_all = T) %>%
+    filter(number_gene_id %!in% tank.effect) %>% #filter out tank-effect DEGs 
+    filter(number_gene_id %in% rownames(diffex.treatment)) %>%
+    dplyr::select(SPID) %>%  na.omit() %>% unlist() %>% as.vector()
+
+b <- dml25.annot.filt %>% filter(feature=="gene" & !is.na(accession) & location=="in-genes") %>%
+  dplyr::select(accession) %>% distinct(accession) %>%  
+  na.omit() %>% unlist() %>% as.vector()
+
+c <- dml25.flank.genes.up.annot
+
+d <- dml25.flank.genes.down.annot
+
+# Differentially expressed genes with DMLs "inside" genes 
+Reduce(intersect, list(a,b))
+
+# Differentially expressed genes with DMLs "upstream" genes 
+Reduce(intersect, list(a,c))
+
+# Differentially expressed genes with DMLs "downstream" genes 
+Reduce(intersect, list(a,d))
+
+# Genes with DMLs in gene bodies and upstream 
+Reduce(intersect, list(b,c)) %>% noquote()
+
+# Genes with DMLs in gene bodies and downstream 
+Reduce(intersect, list(b,d)) %>% noquote()
+
+# Genes with DMLs in gene bodies and upstream and downstream 
+Reduce(intersect, list(b,c,d)) %>% noquote()
+```
+Correlate PCA axes 
+
+```{r, warning=F}
+pca.both <- tab.meth.annot %>% select(sample.id, starts_with("PC"), sample, tank, high_or_low_co2, developmental_stage) %>%
+  left_join(tab.expr.annot %>% select(sample.id, Sample, starts_with("EV")) %>% rename("PC1.expr"="EV1.all", "PC2.expr"="EV2.all", "s.id"="sample.id"),
+            by=c("sample"="Sample"))
+
+cor(pca.both %>% filter(!is.na(PC1.expr)) %>% dplyr::select(starts_with("PC"))) %>% corrplot(tl.cex=0.65) 
+
+chart.Correlation(pca.both %>% filter(!is.na(PC1.expr)) %>% dplyr::select(starts_with("PC")), 
+                  histogram=F, pch=19) 
+# Correlated PCA Axes: 
+# PC1.meth ~ PC2.expr at -0.7
+# PC4.meth ~ PC1.expr at -0.58
+
+pca.both %>% ggplot(aes(x=PC1.meth, y=PC2.expr)) + 
+  geom_point(size=5, alpha=0.6, aes(col=high_or_low_co2)) + 
+  theme_minimal() + 
+  theme(legend.position = "right", legend.text=element_text(size=8), legend.title=element_text(size=9)) + 
+  scale_color_manual(name="Treatment", 
+                     values=c("L"="dodgerblue3",
+                              "H"="firebrick3"),
+                     labels=c("L"="Control",
+                              "H"="High pCO2")) +
+  scale_shape_manual(guide="none", values=c("L"=19, "H"=17)) +
+  guides(fill="none", colour = guide_legend(override.aes = list(size=3.5, linetype="blank", shape=c(19, 17)))) +
+  geom_smooth(method="lm", formula=y~x) + ggtitle("Global Expression PC2 ~ Global Methylation PC1") +
+     stat_cor(method = "pearson", label.x = 100, label.y = 75,size=4) + 
+  xlab("Methylation PC1 (12%)") + ylab("Expression PC2 (12.5%)")
+
+
+pca.both %>% ggplot(aes(x=PC4.meth, y=PC1.expr)) + 
+  geom_point(size=5, alpha=0.6, aes(col=high_or_low_co2)) + 
+  theme_minimal() + 
+  theme(legend.position = "right", legend.text=element_text(size=8), legend.title=element_text(size=9)) + 
+  scale_color_manual(name="Treatment", 
+                     values=c("L"="dodgerblue3",
+                              "H"="firebrick3"),
+                     labels=c("L"="Control",
+                              "H"="High pCO2")) +
+  scale_shape_manual(guide="none", values=c("L"=19, "H"=17)) +
+  guides(fill="none", colour = guide_legend(override.aes = list(size=3.5, linetype="blank", shape=c(19, 17)))) +
+  geom_smooth(method="lm", formula=y~x) + ggtitle("PC1 expression ~ PC4 methylation")  +
+     stat_cor(method = "pearson", label.x = 100, label.y = 75,size=4) + 
+  xlab("Methylation PC4 (9.7%)") + ylab("Expression PC1 (40.3%")
+
+
+```
+
+- What are top contributing loci to each methylated PC? Are any DMLs, especially in PC1 and PC4? 
+
+```{r}
+#re-run meth PCA to get loci as rownames! 
+PCA.10x.integ <- PCASamples(meth_unite_10x %>% set_rownames(paste(meth_unite_10x$chr, meth_unite_10x$start, sep=".")), obj.return = TRUE)
+
+library(factoextra)
+
+# Are any of the 1000 top contributing loci to PC axes also DMLs? 
+
+# meth PC1
+(meth.pca.1 <- fviz_contrib(PCA.10x.integ, choice = "var", axes = 1, top = 1000)) + 
+   theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+dml25.annot.filt %>% filter(feature=="gene") %>%
+  mutate(locus=paste(chr, start_dml+1, sep=".")) %>% 
+  filter(locus %in% 
+           (meth.pca.1$data %>% arrange(desc(contrib)) %>% head(n=1000))$name)
+
+# meth PC2
+(meth.pca.2 <- fviz_contrib(PCA.10x.integ, choice = "var", axes = 2, top = 1000)) + 
+   theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+dml25.annot.filt %>% filter(feature=="gene") %>%
+  mutate(locus=paste(chr, start_dml+1, sep=".")) %>% 
+  filter(locus %in% 
+           (meth.pca.2$data %>% arrange(desc(contrib)) %>% head(n=1000))$name)
+
+# meth PC3
+(meth.pca.3 <- fviz_contrib(PCA.10x.integ, choice = "var", axes = 3, top = 1000)) + 
+   theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+dml25.annot.filt %>% filter(feature=="gene") %>%
+  mutate(locus=paste(chr, start_dml+1, sep=".")) %>% 
+  filter(locus %in% 
+           (meth.pca.3$data %>% arrange(desc(contrib)) %>% head(n=1000))$name)
+
+# meth PC4
+(meth.pca.4 <- fviz_contrib(PCA.10x.integ, choice = "var", axes = 4, top = 1000)) + 
+   theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+dml25.annot.filt %>% filter(feature=="gene") %>%
+  mutate(locus=paste(chr, start_dml+1, sep=".")) %>% 
+  filter(locus %in% 
+           (meth.pca.4$data %>% arrange(desc(contrib)) %>% head(n=1000))$name)
+```
+
+Correlate axes from DML and DEG PCAs 
+
+```{r, warning=F}
+pca.both.diff <- tab.meth.dmls.annot %>% select(sample.id, starts_with("PC"), sample, tank, high_or_low_co2, developmental_stage) %>%
+  left_join(tab.expr.annot.degs %>% select(sample.id, Sample, starts_with("EV")) %>% rename("PC1.expr"="EV1.all", "PC2.expr"="EV2.all", "s.id"="sample.id"),
+            by=c("sample"="Sample"))
+
+cor(pca.both.diff %>% filter(!is.na(PC1.expr)) %>% dplyr::select(starts_with("PC"))) %>% corrplot(tl.cex=0.65) 
+
+chart.Correlation(pca.both.diff %>% filter(!is.na(PC1.expr)) %>% dplyr::select(starts_with("PC")), 
+                  histogram=F, pch=19) 
+
+pca.both.diff %>% ggplot(aes(x=PC1.meth, y=PC1.expr)) + 
+  geom_point(size=5, alpha=0.6, aes(col=high_or_low_co2)) + 
+  theme_minimal() + 
+  theme(legend.position = "right", legend.text=element_text(size=8), legend.title=element_text(size=9)) + 
+  scale_color_manual(name="Treatment", 
+                     values=c("L"="dodgerblue3",
+                              "H"="firebrick3"),
+                     labels=c("L"="Control",
+                              "H"="High pCO2")) +
+  scale_shape_manual(guide="none", values=c("L"=19, "H"=17)) +
+  guides(fill="none", colour = guide_legend(override.aes = list(size=3.5, linetype="blank", shape=c(19, 17)))) +
+  geom_smooth(method="lm", formula=y~x) + ggtitle("DEG PC1 ~ DML PC1") +
+     stat_cor(method = "pearson", label.x = 5, label.y = 10,size=4) + 
+  xlab("DML PC1 (26.2%)") + ylab("DEG PC1 (46%)")
+
+
+pca.both %>% ggplot(aes(x=PC4.meth, y=PC1.expr)) + 
+  geom_point(size=5, alpha=0.6, aes(col=high_or_low_co2)) + 
+  theme_minimal() + 
+  theme(legend.position = "right", legend.text=element_text(size=8), legend.title=element_text(size=9)) + 
+  scale_color_manual(name="Treatment", 
+                     values=c("L"="dodgerblue3",
+                              "H"="firebrick3"),
+                     labels=c("L"="Control",
+                              "H"="High pCO2")) +
+  scale_shape_manual(guide="none", values=c("L"=19, "H"=17)) +
+  guides(fill="none", colour = guide_legend(override.aes = list(size=3.5, linetype="blank", shape=c(19, 17)))) +
+  geom_smooth(method="lm", formula=y~x) + ggtitle("PC1 expression ~ PC4 methylation")  +
+     stat_cor(method = "pearson", label.x = 100, label.y = 75,size=4) + 
+  xlab("Methylation PC4 (9.7%)") + ylab("Expression PC1 (40.3%")
+
+
+```
+
+
+
+
+Correlation of methylation distance and expression distance 
+
+### Extract distance matrix (manhattan) from the % methylated matrix
+
+```{r}
+meth.matrix <- 
+  t(perc.meth) %>% as.data.frame() %>% rownames_to_column("sample_seq") %>% 
+  left_join(sample.info %>% dplyr::select(sample_seq, sample) %>% mutate(sample_seq=as.character(sample_seq))) %>%
+  mutate(sample=gsub("-", "\\.", sample)) %>% dplyr::select(-sample_seq) %>% filter(sample %in% tab.expr.annot$sample.id) %>% 
+  arrange(sample) %>% dplyr::select(sample, everything()) %>% column_to_rownames("sample") %>% as.matrix()
+
+#cor.pears <- cor(perc.meth, method="pearson") # create pearson correlation matrix.
+dist.meth <- dist(meth.matrix, method = "manhattan", diag = T, upper = F)
+# dist.meth.df <- reshape2::melt(as.matrix(dist.meth), varnames = c("row", "col")) %>% 
+#   left_join(sample.info %>% dplyr::select(sample, high_or_low_co2, sample_seq), by=c("row"="sample_seq"))
+
+#cor.pears.DMLs <- cor(perc.methDMLs, method="pearson")
+dist.meth.DMLs <- dist(meth.matrix[,rownames(perc.methDMLs)], method = "manhattan", diag = T, upper = F)
+# dist.meth.DMLs.df <- reshape2::melt(as.matrix(dist.meth.DMLs), varnames = c("row", "col")) %>% 
+#   left_join(sample.info %>% dplyr::select(sample, high_or_low_co2, sample_seq), by=c("row"="sample_seq"))
+```
+
+### Extract distance matrix (manhattan) from the gene expression data
+
+```{r}
+rna.matrix <- assay(vsd.treatment) %>% t() %>% as.data.frame() %>% rownames_to_column("sample") %>% 
+  filter(sample %in% rownames(meth.matrix)) %>% 
+  arrange(sample) %>% dplyr::select(sample, everything()) %>% column_to_rownames("sample") %>% as.matrix()
+
+dist.rna <- dist(rna.matrix) 
+# dist.rna.df <- reshape2::melt(as.matrix(dist.rna), varnames = c("row", "col")) %>% 
+#   left_join(sample.info.rna %>% dplyr::select(sample, high_or_low_co2), by=c("row"="sample"))
+
+dist.rna.degs <- dist(rna.matrix[,degs.counts$gene]) 
+# dist.rna.degs.df <- reshape2::melt(as.matrix(dist.rna.degs), varnames = c("row", "col")) %>% 
+#   left_join(sample.info.rna %>% dplyr::select(sample, high_or_low_co2), by=c("row"="sample"))
+```
+
+```{r}
+dist.rna
+dist.rna.df
+dist.rna.degs
+dist.rna.degs.df
+
+str(dist.meth)
+dist.meth.df
+dist.meth.DMLs
+dist.meth.DMLs.df
+
+dist.all <- data.frame(meth=dist.meth[lower.tri(dist.meth)], expr=dist.rna[ lower.tri(dist.rna)])
+dist.diff <- data.frame(meth=dist.meth.DMLs[lower.tri(dist.meth.DMLs)], expr=dist.rna.degs[ lower.tri(dist.rna.degs)])
+
+ggplot(dist.all, aes(x=meth,y=expr)) + 
+  geom_point(shape=19, size=2) +    # Use hollow circles
+    geom_smooth(method=lm) +
+  theme_linedraw()+
+ggtitle("All genes & CpGs") + 
+theme(
+axis.title.x = element_text(size=12),
+axis.title.y = element_text(size=12),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank()
+) +
+  xlab("Methylation distance") + ylab("Expression distance")  +
+  # scale_y_continuous(breaks = c(2250000,3250000),labels = c("225","325"))+
+   stat_cor(method = "pearson", label.x = 1500000, label.y = 125,size=4)
+
+ggplot(dist.diff, aes(x=meth,y=expr)) + 
+  geom_point(shape=19, size=2) +    # Use hollow circles
+    geom_smooth(method=lm) +
+  theme_linedraw()+
+ggtitle("DEGs and DMLs") + 
+theme(
+axis.title.x = element_text( size=12),
+axis.title.y = element_text(size=12),
+panel.grid.major = element_blank(),
+panel.grid.minor = element_blank()
+) +
+  xlab("Methylation distance") + ylab("Expression distance")  +
+  # scale_y_continuous(breaks = c(2250000,3250000),labels = c("225","325"))+
+   stat_cor(method = "pearson", label.x = 35000, label.y = 24,size=4)
+
+```
+
+
+Perform redundancy analysis (db-RDA) to examine the variance in expression explained by methylation variance.
+
+```{r}
+# Use all data 
+expr.dbrda <- counts.ts[(pca.both %>% filter(!is.na(PC1.expr)))$s.id,] #all genes
+meth.dbrda <- pca.both %>% filter(!is.na(PC1.expr)) %>% column_to_rownames(var = "s.id") %>% select(contains(".meth"))
+
+# Use DML/DEG 
+expr.dbrda <- counts.ts[(pca.both %>% filter(!is.na(PC1.expr)))$s.id,] %>% select(diffex.annot$gene) #DEGs only
+meth.dbrda <-pca.both.diff %>% filter(!is.na(PC1.expr)) %>% column_to_rownames(var = "s.id") %>% select(contains(".meth"))
+
+# expr.dbrda[order(match(rownames(expr.dbrda), pca.both$sample)), , drop = FALSE]
+# all(rownames(pca.both %>% filter(!is.na(PC1.expr)) %>% column_to_rownames(var = "s.id") %>% select(contains(".meth"))) == rownames(expr.dbrda[order(match(rownames(expr.dbrda), pca.both$sample))]))
+
+# rda using meth PC axes 
+rda <- vegan::dbrda(expr.dbrda[order(match(rownames(expr.dbrda), pca.both$sample)), , drop = FALSE] ~ PC1.meth + PC2.meth + PC3.meth + PC4.meth,
+                    data = meth.dbrda,
+                    distance = "bray")
+print(rda)
+rda_summary <- summary(rda)
+print(rda_summary)
+rda_summary$concont
+RsquareAdj(rda)
+plot(rda)
+```
+
+```{r}
+fwd.sel <- ordiR2step(dbrda(expr.dbrda[order(match(rownames(expr.dbrda), pca.both$sample)), , drop = FALSE] ~ 1, 
+               data = pca.both %>% filter(!is.na(PC1.expr)) %>% column_to_rownames(var = "s.id") %>% select(contains(".meth"))), # lower model limit (simple!)
+               scope = formula(rda), # upper model limit (the "full" model)
+               direction = "forward",
+               R2scope = TRUE, # can't surpass the "full" model's R2
+               pstep = 1000,
+               trace = TRUE) # change to TRUE to see the selection process!
+fwd.sel$call #forward selection selects meth PC1 axis for model 
+
+#test for significance of RDA 
+anova.cca(rda) #entire model - significant 
+anova.cca(rda, step = 1000, by = "term") #each explanatory variable - PC1.meth is significant 
+anova.cca(rda, step = 1000, by = "axis") #each canonical axis - dbRDA1 is significant
+```
+
+
+```{r}
+# Type 1 scaling - distance based 
+ordiplot(rda, scaling = 1, type = "text")
+
+# # Type 2 scaling
+# ordiplot(rda, scaling = 2, type = "text")
+```
+
+```{r}
+# Custom triplot code!
+
+## extract % explained by the first 2 axes
+perc <- round(100*(rda_summary$cont$importance[2, 1:2]), 2)
+
+## extract scores - these are coordinates in the RDA space
+sc_si <- vegan::scores(rda, display="sites", choices=c(1,2), scaling=1) %>%
+  as.data.frame() %>%
+  rownames_to_column("sample") %>%
+  left_join(pca.both.diff %>% select(s.id, high_or_low_co2), by=c("sample"="s.id")) %>%
+  mutate(color=case_when(
+    high_or_low_co2=="L" ~ "dodgerblue3",
+    high_or_low_co2=="H" ~ "firebrick3")) %>%
+  filter(!is.na(high_or_low_co2)) %>%
+  column_to_rownames("sample")
+
+sc_sp <- vegan::scores(rda, display="species", choices=c(1,2), scaling=1) #genes
+sc_bp <- vegan::scores(rda, display="bp", choices=c(1, 2), scaling=1)
+
+
+## Custom triplot, step by step
+
+# Set up a blank plot with scaling, axes, and labels
+plot(rda,
+     scaling = 1, # set scaling type = distance
+     type = "none", # this excludes the plotting of any points from the results
+     frame = FALSE,
+     # # set axis limits
+     # xlim = c(-1,1), 
+     # ylim = c(-1.5,1.5),
+     # set axis limits
+#     xlim = c(-.55,1.1),
+     ylim = c(-.8,.30),
+     # label the plot (title, and axes)
+     main = "Triplot dbRDA - scaling 1",
+     xlab = paste0("dbRDA1 (", perc[1], "%)"), 
+     ylab = paste0("dbRDA2 (", perc[2], "%)") 
+)
+# add points for site scores
+points(sc_si, 
+       pch = 21, # set shape (here, circle with a fill colour)
+       col = "gray35", # outline colour
+       bg = sc_si$color, # fill colour
+       cex = 1.4) # size
+# # add points for species scores
+# points(sc_sp, 
+#        pch = 22, # set shape (here, square with a fill colour)
+#        col = "black",
+#        bg = "#f2bd33", 
+#        cex = 1.2)
+# # add text labels for species abbreviations
+# text(sc_sp + c(0.03, 0.09), # adjust text coordinates to avoid overlap with points 
+#      labels = rownames(sc_sp), 
+#      col = "grey40", 
+#      font = 2, # bold
+#      cex = 0.6)
+# add arrows for effects of the expanatory variables
+arrows(0,0, # start them from (0,0)
+       sc_bp[,1], sc_bp[,2], # end them at the score value
+       col = "gray25", 
+       lwd = 1.5, code=2)
+# add text labels for arrows
+text(x = sc_bp[,1]*1.15, # adjust text coordinate to avoid overlap with arrow tip
+     y = sc_bp[,2]*1.15,
+     labels = rownames(sc_bp),
+     col = "gray25",
+     cex = 1,
+     font = 2)
+```
+## Takeaway: Methylation PC1 significant influences variation in gene expression, especially when all genes are considered. When only DEGs are examined, PC3 also contributes. 
+
+
+
